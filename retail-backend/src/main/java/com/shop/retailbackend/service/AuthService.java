@@ -2,6 +2,9 @@ package com.shop.retailbackend.service;
 
 import com.shop.retailbackend.dto.auth.AuthResponse;
 import com.shop.retailbackend.dto.auth.LoginRequest;
+import com.shop.retailbackend.dto.auth.TokenRefreshRequest;
+import com.shop.retailbackend.dto.auth.TokenRefreshResponse;
+import com.shop.retailbackend.entity.RefreshToken;
 import com.shop.retailbackend.entity.User;
 import com.shop.retailbackend.exception.AppException;
 import com.shop.retailbackend.repository.UserRepository;
@@ -18,6 +21,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthResponse login(LoginRequest request) {
         // Require at least one identifier
@@ -45,11 +49,26 @@ public class AuthService {
         }
 
         String token = jwtUtil.generateToken(user.getId(), user.getRole().name());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken.getToken())
                 .role(user.getRole().name())
                 .userId(user.getId())
                 .build();
+    }
+
+    public TokenRefreshResponse refreshToken(TokenRefreshRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = jwtUtil.generateToken(user.getId(), user.getRole().name());
+                    return new TokenRefreshResponse(token, requestRefreshToken, "Bearer");
+                })
+                .orElseThrow(() -> new AppException(HttpStatus.FORBIDDEN, "Refresh token is not in database!"));
     }
 }

@@ -1,20 +1,14 @@
 package com.shop.retailbackend.dto.auth;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthResponse {
-
-    private String token;
+public class TokenRefreshRequest {
+    @NotBlank(message = "Refresh token is required")
     private String refreshToken;
-    private String role;
-    private UUID userId;
 }

@@ -3,6 +3,7 @@ package com.shop.retailbackend.controller;
 import com.shop.retailbackend.dto.order.CreateOrderRequest;
 import com.shop.retailbackend.dto.order.CreateReservedOrderRequest;
 import com.shop.retailbackend.dto.order.SaleOrderDto;
+import com.shop.retailbackend.service.OnlineOrderService;
 import com.shop.retailbackend.service.SaleOrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.UUID;
 public class SaleOrderController {
 
     private final SaleOrderService saleOrderService;
+    private final OnlineOrderService onlineOrderService;
 
     @PostMapping
     public ResponseEntity<SaleOrderDto> createOrder(@Valid @RequestBody CreateOrderRequest request,
@@ -63,5 +65,10 @@ public class SaleOrderController {
     @GetMapping("/reserved")
     public ResponseEntity<List<SaleOrderDto>> reservedOrders() {
         return ResponseEntity.ok(saleOrderService.listReservedOrders());
+    }
+
+    @GetMapping("/online/pending-verification")
+    public ResponseEntity<List<com.shop.retailbackend.dto.onlineorder.OnlineOrderDto>> pendingVerification() {
+        return ResponseEntity.ok(onlineOrderService.getPendingVerification());
     }
 }

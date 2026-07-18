@@ -1,6 +1,10 @@
 spring:
   application:
     name: retail-backend
+  security:
+    user:
+      name: dummy_user
+      password: dummy_password
 
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:retail_db}
@@ -9,6 +13,7 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
     show-sql: false
@@ -32,7 +37,7 @@ server:
 
 app:
   jwt:
-    secret: ${JWT_SECRET}
+    secret: ${JWT_SECRET:this-is-a-very-secure-default-secret-key-for-local-testing-only-12345!}
     expiration-ms: 86400000          # 24 hours
     refresh-expiration-ms: 604800000 # 7 days
 

@@ -94,7 +94,7 @@ export default function SettingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {history.map((r: { id: string; rate: number; label: string; setByName: string; createdAt: string }) => (
+                {history.map((r: { id: string; rate: number; label: string; setByName: string | null; createdAt: string }) => (
                   <tr key={r.id} className="border-b border-gray-100">
                     <td className="py-1 pr-4">{r.rate}</td>
                     <td className="py-1 pr-4">{r.label}</td>

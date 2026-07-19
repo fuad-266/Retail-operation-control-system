@@ -26,7 +26,7 @@ public class SaleOrderService {
 
     // ── Create PENDING order (no stock deduction) ─────────────────────────
 
-    @PreAuthorize("hasRole('SELLER')")
+    @PreAuthorize("hasAnyRole('SELLER','OWNER','CASHIER')")
     @Transactional
     public SaleOrderDto createOrder(CreateOrderRequest request, UUID sellerId) {
         User seller = getUserOrThrow(sellerId);
@@ -37,7 +37,7 @@ public class SaleOrderService {
 
     // ── Create RESERVED order (deduct stock immediately) ──────────────────
 
-    @PreAuthorize("hasRole('SELLER')")
+    @PreAuthorize("hasAnyRole('SELLER','OWNER','CASHIER')")
     @Transactional
     public SaleOrderDto createReservedOrder(CreateReservedOrderRequest request, UUID sellerId) {
         User seller = getUserOrThrow(sellerId);
@@ -69,7 +69,7 @@ public class SaleOrderService {
 
     // ── Cancel order ──────────────────────────────────────────────────────
 
-    @PreAuthorize("hasRole('SELLER')")
+    @PreAuthorize("hasAnyRole('SELLER','OWNER','CASHIER')")
     @Transactional
     public void cancelOrder(UUID orderId, UUID sellerId) {
         SaleOrder order = getOrderOrThrow(orderId);
@@ -117,7 +117,7 @@ public class SaleOrderService {
 
     // ── List endpoints ────────────────────────────────────────────────────
 
-    @PreAuthorize("hasRole('SELLER')")
+    @PreAuthorize("hasAnyRole('SELLER','OWNER','CASHIER')")
     public List<SaleOrderDto> listMyOrders(UUID sellerId) {
         return saleOrderRepository.findAllBySellerId(sellerId).stream()
                 .map(this::toDto)

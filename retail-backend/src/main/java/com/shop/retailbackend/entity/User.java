@@ -42,7 +42,7 @@ public class User {
 
     @Column(name = "preferred_currency", nullable = false)
     @Builder.Default
-    private String preferredCurrency = "ETB";
+    private String preferredCurrency = "KSH";
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

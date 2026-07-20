@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { productsService } from '../../services/products.service'
-import { ordersService, type OrderItemRequest, type SaleOrderDto } from '../../services/orders.service'
+import { ordersService, type SaleOrderDto } from '../../services/orders.service'
 import { usersService } from '../../services/users.service'
 import { useForm } from 'react-hook-form'
 
@@ -15,10 +15,23 @@ export default function SellerDashboard({ currency }: Props) {
   const [reserveModal, setReserveModal] = useState(false)
   const [customerModal, setCustomerModal] = useState(false)
   const [qty, setQty] = useState<Record<string, number>>({})
+  const [searchTerm, setSearchTerm] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
   const { data: products } = useQuery({
     queryKey: ['products-public'],
     queryFn: productsService.listOwner,
+  })
+
+  // Extract unique categories
+  const categories = ['all', ...(products ? Array.from(new Set(products.map(p => p.category))) : [])]
+
+  // Filter products based on search and category
+  const filteredProducts = (products || []).filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (p.category || '').toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter
+    return matchesSearch && matchesCategory
   })
 
   const { data: myOrders, isLoading: ordersLoading } = useQuery({
@@ -34,11 +47,6 @@ export default function SellerDashboard({ currency }: Props) {
   const { mutate: convertToPending } = useMutation({
     mutationFn: ordersService.convertToPending,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['my-orders'] }),
-  })
-
-  const { mutate: createOrder, isPending: creatingOrder } = useMutation({
-    mutationFn: (items: OrderItemRequest[]) => ordersService.createOrder(items),
-    onSuccess: () => { setCart([]); qc.invalidateQueries({ queryKey: ['my-orders'] }) },
   })
 
   const price = (item: CartItem) =>
@@ -57,11 +65,6 @@ export default function SellerDashboard({ currency }: Props) {
 
   function removeFromCart(id: string) {
     setCart((prev) => prev.filter((i) => i.productId !== id))
-  }
-
-  function submitOrder() {
-    if (cart.length === 0) return
-    createOrder(cart.map((i) => ({ productId: i.productId, quantity: i.quantity })))
   }
 
   const statusColor: Record<string, string> = {
@@ -96,31 +99,71 @@ export default function SellerDashboard({ currency }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Product list */}
           <div>
-            <h2 className="text-sm font-semibold text-gray-600 mb-3">Products</h2>
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-              {products?.map((p) => (
-                <div key={p.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{p.name}</p>
-                    <p className="text-xs text-gray-400">
-                      {currency === 'KES' ? `KES ${p.priceKes.toFixed(2)}` : `ETB ${p.priceEtb.toFixed(2)}`}
-                      {' · '}Stock: {p.stockQuantity}
-                    </p>
+            <div className="mb-4 space-y-3">
+              <h2 className="text-sm font-semibold text-gray-600">Products</h2>
+              
+              {/* Search bar */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm pl-10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+
+              {/* Category filter */}
+              <div className="flex gap-2 flex-wrap">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      categoryFilter === cat
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {cat === 'all' ? 'All' : cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Product list */}
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+              {filteredProducts.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">No products found</p>
+              ) : (
+                filteredProducts.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{p.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {currency === 'KES' ? `KES ${p.priceKes.toFixed(2)}` : `ETB ${p.priceEtb.toFixed(2)}`}
+                        {' · '}Stock: {p.stockQuantity}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number" min={1} max={p.stockQuantity}
+                        value={qty[p.id] ?? 1}
+                        onChange={(e) => setQty((q) => ({ ...q, [p.id]: parseInt(e.target.value) || 1 }))}
+                        className="w-14 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center"
+                      />
+                      <button onClick={() => addToCart(p)}
+                        className="bg-indigo-600 text-white text-xs px-2 py-1 rounded-lg hover:bg-indigo-700">
+                        Add
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number" min={1} max={p.stockQuantity}
-                      value={qty[p.id] ?? 1}
-                      onChange={(e) => setQty((q) => ({ ...q, [p.id]: parseInt(e.target.value) || 1 }))}
-                      className="w-14 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center"
-                    />
-                    <button onClick={() => addToCart(p)}
-                      className="bg-indigo-600 text-white text-xs px-2 py-1 rounded-lg hover:bg-indigo-700">
-                      Add
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -143,13 +186,9 @@ export default function SellerDashboard({ currency }: Props) {
                   <div className="bg-gray-50 rounded-xl px-4 py-3 font-semibold text-sm">
                     Total: {currency === 'KES' ? 'KES' : 'ETB'} {totalAmount.toFixed(2)}
                   </div>
-                  <div className="flex gap-3 pt-2">
-                    <button onClick={submitOrder} disabled={creatingOrder}
-                      className="flex-1 bg-indigo-600 text-white rounded-xl py-2 text-sm hover:bg-indigo-700 disabled:opacity-50">
-                      {creatingOrder ? 'Creating...' : 'Create Order'}
-                    </button>
+                  <div className="pt-2">
                     <button onClick={() => setReserveModal(true)}
-                      className="flex-1 bg-blue-600 text-white rounded-xl py-2 text-sm hover:bg-blue-700">
+                      className="w-full bg-blue-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-blue-700">
                       Reserve for Customer
                     </button>
                   </div>
@@ -205,7 +244,12 @@ export default function SellerDashboard({ currency }: Props) {
         <ReserveModal
           cart={cart}
           onClose={() => setReserveModal(false)}
-          onSaved={() => { setReserveModal(false); setCart([]); qc.invalidateQueries({ queryKey: ['my-orders'] }) }}
+          onSaved={() => { 
+            setReserveModal(false); 
+            setCart([]); 
+            setTab('myorders'); // Switch to My Orders tab to see the new order
+            qc.invalidateQueries({ queryKey: ['my-orders'] }) 
+          }}
         />
       )}
 
@@ -224,16 +268,21 @@ function ReserveModal({ cart, onClose, onSaved }: {
 }) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<{ name: string; phone: string }>()
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   async function onSubmit(data: { name: string; phone: string }) {
     setError('')
+    setSuccess('')
     try {
       await ordersService.createReservedOrder({
         items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
         reservedForName: data.name,
         reservedForPhone: data.phone,
       })
-      onSaved()
+      setSuccess('Order reserved successfully!')
+      setTimeout(() => {
+        onSaved()
+      }, 800) // Brief delay to show success message
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed'
       setError(msg)
@@ -247,18 +296,19 @@ function ReserveModal({ cart, onClose, onSaved }: {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div>
             <label className="block text-xs text-gray-600 mb-1">Customer Name *</label>
-            <input {...register('name', { required: 'Required' })} className={inp} />
+            <input {...register('name', { required: 'Required' })} className={inp} disabled={!!success} />
             {errors.name && <p className="text-red-500 text-xs mt-0.5">{errors.name.message}</p>}
           </div>
           <div>
             <label className="block text-xs text-gray-600 mb-1">Customer Phone *</label>
-            <input {...register('phone', { required: 'Required' })} className={inp} />
+            <input {...register('phone', { required: 'Required' })} className={inp} disabled={!!success} />
             {errors.phone && <p className="text-red-500 text-xs mt-0.5">{errors.phone.message}</p>}
           </div>
           {error && <p className="text-red-500 text-xs">{error}</p>}
+          {success && <p className="text-green-600 text-xs font-medium">{success}</p>}
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 border border-gray-300 rounded-lg py-2 text-sm">Cancel</button>
-            <button type="submit" disabled={isSubmitting} className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm disabled:opacity-50">
+            <button type="button" onClick={onClose} disabled={!!success} className="flex-1 border border-gray-300 rounded-lg py-2 text-sm disabled:opacity-50">Cancel</button>
+            <button type="submit" disabled={isSubmitting || !!success} className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm disabled:opacity-50">
               {isSubmitting ? 'Reserving...' : 'Reserve'}
             </button>
           </div>

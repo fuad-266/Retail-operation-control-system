@@ -118,6 +118,7 @@ public class SaleOrderService {
     // ── List endpoints ────────────────────────────────────────────────────
 
     @PreAuthorize("hasAnyRole('SELLER','OWNER','CASHIER')")
+    @Transactional(readOnly = true)
     public List<SaleOrderDto> listMyOrders(UUID sellerId) {
         return saleOrderRepository.findAllBySellerId(sellerId).stream()
                 .map(this::toDto)
@@ -125,6 +126,7 @@ public class SaleOrderService {
     }
 
     @PreAuthorize("hasAnyRole('OWNER','CASHIER')")
+    @Transactional(readOnly = true)
     public List<SaleOrderDto> listPendingOrders() {
         return saleOrderRepository.findAllByStatus(SaleOrderStatus.PENDING).stream()
                 .map(this::toDto)
@@ -132,6 +134,7 @@ public class SaleOrderService {
     }
 
     @PreAuthorize("hasAnyRole('OWNER','CASHIER')")
+    @Transactional(readOnly = true)
     public List<SaleOrderDto> listReservedOrders() {
         return saleOrderRepository.findAllByStatus(SaleOrderStatus.RESERVED).stream()
                 .map(this::toDto)

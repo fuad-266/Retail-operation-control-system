@@ -34,9 +34,20 @@ export default function SellerDashboard({ currency }: Props) {
     return matchesSearch && matchesCategory
   })
 
-  const { data: myOrders, isLoading: ordersLoading } = useQuery({
+  const { data: myOrders, isLoading: ordersLoading, error: ordersError } = useQuery({
     queryKey: ['my-orders'],
-    queryFn: ordersService.myOrders,
+    queryFn: async () => {
+      try {
+        const result = await ordersService.myOrders()
+        console.log('Orders fetched successfully:', result)
+        return result
+      } catch (err) {
+        console.error('Failed to fetch orders:', err)
+        throw err
+      }
+    },
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   })
 
   const { mutate: cancelOrder } = useMutation({
@@ -201,11 +212,27 @@ export default function SellerDashboard({ currency }: Props) {
       {/* My Orders tab */}
       {tab === 'myorders' && (
         <div>
-          {ordersLoading
-            ? <p className="text-sm text-gray-400">Loading...</p>
-            : (
-              <div className="space-y-3">
-                {myOrders?.map((order: SaleOrderDto) => (
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-600">My Orders</h2>
+            <button
+              onClick={() => qc.invalidateQueries({ queryKey: ['my-orders'] })}
+              className="text-xs text-indigo-600 hover:underline"
+            >
+              Refresh
+            </button>
+          </div>
+          {ordersLoading && <p className="text-sm text-gray-400">Loading orders...</p>}
+          {ordersError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-600 font-medium">Error loading orders</p>
+              <p className="text-xs text-red-500 mt-1">{(ordersError as any)?.response?.data?.message || (ordersError as Error).message}</p>
+              <p className="text-xs text-gray-500 mt-2">Check: Backend running? JWT valid? Network tab in browser console</p>
+            </div>
+          )}
+          {!ordersLoading && !ordersError && (
+            <div className="space-y-3">
+              {myOrders && myOrders.length > 0 ? (
+                myOrders.map((order: SaleOrderDto) => (
                   <div key={order.id} className="bg-white border border-gray-200 rounded-xl px-5 py-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className={`text-xs px-2 py-0.5 rounded font-medium ${statusColor[order.status]}`}>{order.status}</span>
@@ -232,10 +259,15 @@ export default function SellerDashboard({ currency }: Props) {
                       )}
                     </div>
                   </div>
-                ))}
-                {myOrders?.length === 0 && <p className="text-sm text-gray-400">No orders yet.</p>}
-              </div>
-            )}
+                ))
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-8 text-center">
+                  <p className="text-sm text-gray-500">No orders yet.</p>
+                  <p className="text-xs text-gray-400 mt-1">Reserved orders will appear here after creation.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -243,6 +275,7 @@ export default function SellerDashboard({ currency }: Props) {
       {reserveModal && (
         <ReserveModal
           cart={cart}
+          qc={qc}
           onClose={() => setReserveModal(false)}
           onSaved={() => { 
             setReserveModal(false); 
@@ -261,10 +294,11 @@ export default function SellerDashboard({ currency }: Props) {
   )
 }
 
-function ReserveModal({ cart, onClose, onSaved }: {
+function ReserveModal({ cart, onClose, onSaved, qc }: {
   cart: CartItem[]
   onClose: () => void
   onSaved: () => void
+  qc: any
 }) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<{ name: string; phone: string }>()
   const [error, setError] = useState('')
@@ -280,9 +314,11 @@ function ReserveModal({ cart, onClose, onSaved }: {
         reservedForPhone: data.phone,
       })
       setSuccess('Order reserved successfully!')
-      setTimeout(() => {
+      // Wait a bit then close and refresh
+      setTimeout(async () => {
+        await qc.invalidateQueries({ queryKey: ['my-orders'] })
         onSaved()
-      }, 800) // Brief delay to show success message
+      }, 500)
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed'
       setError(msg)

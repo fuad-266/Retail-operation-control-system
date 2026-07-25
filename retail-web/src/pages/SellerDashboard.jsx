@@ -7,8 +7,6 @@ import {
     Minus,
     Trash2,
     Search,
-    ToggleLeft,
-    ToggleRight,
     UserPlus,
     X,
     Send,
@@ -23,6 +21,7 @@ import {
     History,
     Grid,
     Edit2,
+    User,
 } from 'lucide-react';
 
 export default function SellerDashboard() {
@@ -38,13 +37,12 @@ export default function SellerDashboard() {
     const [prodLoading, setProdLoading] = useState(true);
 
     // ─── Add Item Modal State ────────────────
-    const [selectedProduct, setSelectedProduct] = useState(null); // product being configured
+    const [selectedProduct, setSelectedProduct] = useState(null);
     const [itemQty, setItemQty] = useState(1);
     const [itemUnitPrice, setItemUnitPrice] = useState('');
 
     // ─── Cart State ─────────────────────────
     const [cart, setCart] = useState([]);
-    const [reserve, setReserve] = useState(false);
     const [customerName, setCustomerName] = useState('');
     const [submitLoading, setSubmitLoading] = useState(false);
     const [submitMsg, setSubmitMsg] = useState({ type: '', text: '' });
@@ -100,7 +98,6 @@ export default function SellerDashboard() {
     const handleOpenItemModal = (product) => {
         if (!product.active || product.stockQuantity <= 0) return;
 
-        // Check if already in cart
         const existing = cart.find(c => c.productId === product.id);
         setSelectedProduct(product);
         if (existing) {
@@ -162,7 +159,6 @@ export default function SellerDashboard() {
     const clearCart = () => {
         setCart([]);
         setCustomerName('');
-        setReserve(false);
         setSubmitMsg({ type: '', text: '' });
     };
 
@@ -189,8 +185,8 @@ export default function SellerDashboard() {
     // ─── Order Submission ───────────────────
     const handleSubmitOrder = async () => {
         if (cart.length === 0) return;
-        if (reserve && !customerName.trim()) {
-            setSubmitMsg({ type: 'error', text: 'Please enter customer name for reservation.' });
+        if (!customerName.trim()) {
+            setSubmitMsg({ type: 'error', text: 'Please enter the Customer Name / Identifier so the Cashier can identify this order.' });
             return;
         }
         setSubmitMsg({ type: '', text: '' });
@@ -203,22 +199,18 @@ export default function SellerDashboard() {
                 unitPrice: c.unitPrice,
             }));
 
-            if (reserve) {
-                await orderService.createReserved({
-                    items,
-                    reservedForName: customerName.trim(),
-                });
-                setSubmitMsg({ type: 'success', text: '✅ Reservation created successfully!' });
-            } else {
-                await orderService.create({ items });
-                setSubmitMsg({ type: 'success', text: '✅ Order submitted to cashier!' });
-            }
+            await orderService.create({
+                items,
+                customerName: customerName.trim(),
+            });
+
+            setSubmitMsg({ type: 'success', text: `✅ Order created for "${customerName.trim()}" & sent to Cashier!` });
 
             setTimeout(() => {
                 clearCart();
                 fetchProducts();
                 fetchOrders();
-            }, 1200);
+            }, 1400);
         } catch (err) {
             setSubmitMsg({ type: 'error', text: err.response?.data?.message || 'Failed to submit order.' });
         } finally {
@@ -228,23 +220,13 @@ export default function SellerDashboard() {
 
     // ─── Cancel Order ───────────────────────
     const handleCancelOrder = async (id) => {
-        if (!confirm('Cancel this order? Stock will be restored.')) return;
+        if (!confirm('Cancel this order?')) return;
         try {
             await orderService.cancel(id);
             fetchOrders();
             fetchProducts();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to cancel order');
-        }
-    };
-
-    // ─── Convert to Pending ─────────────────
-    const handleConvertOrder = async (id) => {
-        try {
-            await orderService.convertToPending(id);
-            fetchOrders();
-        } catch (err) {
-            alert(err.response?.data?.message || 'Failed to convert order');
         }
     };
 
@@ -273,8 +255,7 @@ export default function SellerDashboard() {
 
     const statusBadge = (status) => {
         switch (status) {
-            case 'PENDING': return <span className="status-badge pending"><Clock size={14} /> Pending</span>;
-            case 'RESERVED': return <span className="status-badge reserved"><AlertCircle size={14} /> Reserved</span>;
+            case 'PENDING': return <span className="status-badge pending"><Clock size={14} /> Pending Payment</span>;
             case 'PAID': return <span className="status-badge paid"><CheckCircle size={14} /> Paid</span>;
             case 'CANCELLED': return <span className="status-badge cancelled"><XCircle size={14} /> Cancelled</span>;
             default: return <span className="status-badge">{status}</span>;
@@ -287,7 +268,7 @@ export default function SellerDashboard() {
             <div className="pos-header">
                 <div className="pos-header-title">
                     <h1>Seller POS Terminal</h1>
-                    <p className="page-subtitle">Select product, specify quantity & price, and submit order</p>
+                    <p className="page-subtitle">Add items, set customer name, and send order directly to Cashier</p>
                 </div>
 
                 {/* View Switcher */}
@@ -307,9 +288,9 @@ export default function SellerDashboard() {
                     >
                         <History size={18} />
                         <span>My Orders</span>
-                        {orders.filter(o => o.status === 'PENDING' || o.status === 'RESERVED').length > 0 && (
+                        {orders.filter(o => o.status === 'PENDING').length > 0 && (
                             <span className="pos-badge">
-                                {orders.filter(o => o.status === 'PENDING' || o.status === 'RESERVED').length}
+                                {orders.filter(o => o.status === 'PENDING').length}
                             </span>
                         )}
                     </button>
@@ -320,7 +301,7 @@ export default function SellerDashboard() {
                     onClick={() => { setCustomerModal(true); setCustMsg({ type: '', text: '' }); }}
                     id="add-customer-btn"
                 >
-                    <UserPlus size={18} /> Add Customer
+                    <UserPlus size={18} /> Add Customer Account
                 </button>
             </div>
 
@@ -425,7 +406,7 @@ export default function SellerDashboard() {
                         <div className="pos-cart-header">
                             <div className="cart-header-title">
                                 <ShoppingCart size={24} />
-                                <h2>Cart Summary</h2>
+                                <h2>Order Cart</h2>
                             </div>
                             {cart.length > 0 && (
                                 <button className="btn-link-danger" onClick={clearCart} title="Clear Cart">
@@ -500,32 +481,24 @@ export default function SellerDashboard() {
                                     ))}
                                 </div>
 
-                                {/* Reserve Toggle Box */}
+                                {/* Customer Name Input (Required for Cashier Identification) */}
                                 <div className="pos-reserve-box">
-                                    <button
-                                        className={`reserve-toggle-btn ${reserve ? 'on' : 'off'}`}
-                                        onClick={() => setReserve(!reserve)}
-                                        id="reserve-toggle"
-                                    >
-                                        {reserve ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
-                                        <span>Reserve Order for Customer</span>
-                                    </button>
-
-                                    {reserve && (
-                                        <div className="reserve-fields">
-                                            <div className="form-group">
-                                                <label htmlFor="reserve-name">Customer Name *</label>
-                                                <input
-                                                    id="reserve-name"
-                                                    value={customerName}
-                                                    onChange={(e) => setCustomerName(e.target.value)}
-                                                    placeholder="e.g. John Doe"
-                                                    required
-                                                    autoFocus
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                        <label htmlFor="order-customer-name" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+                                            <User size={16} /> Customer Name / Owner *
+                                        </label>
+                                        <input
+                                            id="order-customer-name"
+                                            value={customerName}
+                                            onChange={(e) => setCustomerName(e.target.value)}
+                                            placeholder="e.g. John Doe / Customer Name"
+                                            required
+                                            style={{ marginTop: '0.4rem' }}
+                                        />
+                                        <small className="text-muted" style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem' }}>
+                                            Required so Cashier can identify who is paying. Unpaid orders auto-cancel after 6 hours.
+                                        </small>
+                                    </div>
                                 </div>
 
                                 {/* Alert Notification */}
@@ -547,11 +520,10 @@ export default function SellerDashboard() {
                                         id="submit-order-btn"
                                     >
                                         {submitLoading ? (
-                                            <span className="btn-loading">Submitting Order…</span>
+                                            <span className="btn-loading">Sending to Cashier…</span>
                                         ) : (
                                             <>
-                                                <Send size={20} />
-                                                {reserve ? 'Create Reservation Order' : 'Complete Sale Order'}
+                                                <Send size={20} /> Complete Sale Order
                                             </>
                                         )}
                                     </button>
@@ -565,7 +537,7 @@ export default function SellerDashboard() {
                 <div className="pos-history-workspace">
                     <div className="section-card">
                         <div className="section-header">
-                            <h2><History size={20} /> Order History & Reservations</h2>
+                            <h2><History size={20} /> My Orders History</h2>
                             <button className="btn btn-outline" onClick={fetchOrders}>
                                 <RefreshCw size={16} /> Refresh Orders
                             </button>
@@ -587,9 +559,9 @@ export default function SellerDashboard() {
                                         <tr>
                                             <th>Order ID</th>
                                             <th>Date</th>
+                                            <th>Customer / Owner</th>
                                             <th>Items</th>
                                             <th>Total Amount</th>
-                                            <th>Customer / Reservation</th>
                                             <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
@@ -597,8 +569,13 @@ export default function SellerDashboard() {
                                     <tbody>
                                         {orders.map(order => (
                                             <tr key={order.id} className={`order-row status-${order.status.toLowerCase()}`}>
-                                                <td className="td-id">#{order.id}</td>
+                                                <td className="td-id">#{order.id.slice(0, 8)}</td>
                                                 <td>{new Date(order.createdAt).toLocaleString()}</td>
+                                                <td>
+                                                    <strong className="text-accent-info">
+                                                        {order.reservedForName || order.customerName || 'In-store Walk-in'}
+                                                    </strong>
+                                                </td>
                                                 <td className="td-items">
                                                     {order.items?.map((item, i) => (
                                                         <span key={i} className="order-item-tag">
@@ -611,29 +588,14 @@ export default function SellerDashboard() {
                                                         KES {Number(order.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                                     </strong>
                                                 </td>
-                                                <td>
-                                                    {order.reservedForName ? (
-                                                        <span className="text-accent-info">Reserved for: {order.reservedForName}</span>
-                                                    ) : (
-                                                        <span className="text-muted">In-store Walk-in</span>
-                                                    )}
-                                                </td>
                                                 <td>{statusBadge(order.status)}</td>
                                                 <td className="td-actions">
-                                                    {(order.status === 'PENDING' || order.status === 'RESERVED') && (
+                                                    {order.status === 'PENDING' && (
                                                         <button
                                                             className="btn btn-sm btn-danger"
                                                             onClick={() => handleCancelOrder(order.id)}
                                                         >
                                                             Cancel
-                                                        </button>
-                                                    )}
-                                                    {order.status === 'RESERVED' && (
-                                                        <button
-                                                            className="btn btn-sm btn-outline"
-                                                            onClick={() => handleConvertOrder(order.id)}
-                                                        >
-                                                            Convert to Sale
                                                         </button>
                                                     )}
                                                 </td>

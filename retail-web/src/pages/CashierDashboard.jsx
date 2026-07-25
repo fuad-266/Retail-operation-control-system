@@ -168,16 +168,22 @@ export default function CashierDashboard() {
                             <table className="data-table" id="pending-orders-table">
                                 <thead>
                                     <tr>
+                                        <th>Customer / Owner</th>
                                         <th>Seller</th>
                                         <th>Items</th>
                                         <th>Total</th>
-                                        <th>Date</th>
+                                        <th>Created Date</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {pendingOrders.map(order => (
                                         <tr key={order.id}>
+                                            <td>
+                                                <strong className="text-accent-info">
+                                                    {order.reservedForName || order.customerName || 'In-store Walk-in'}
+                                                </strong>
+                                            </td>
                                             <td>{order.sellerName}</td>
                                             <td className="td-items">
                                                 {order.items?.map((item, i) => (
@@ -185,7 +191,10 @@ export default function CashierDashboard() {
                                                 ))}
                                             </td>
                                             <td>{formatAmount(order.totalAmount)}</td>
-                                            <td>{new Date(order.createdAt).toLocaleString()}</td>
+                                            <td>
+                                                <div>{new Date(order.createdAt).toLocaleString()}</div>
+                                                <span className="text-muted" style={{ fontSize: '0.75rem' }}>Expires in 6h if unpaid</span>
+                                            </td>
                                             <td>
                                                 <button
                                                     className="btn btn-sm btn-primary"

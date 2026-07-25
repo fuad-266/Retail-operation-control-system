@@ -30,7 +30,8 @@ public class SaleOrderService {
     @Transactional
     public SaleOrderDto createOrder(CreateOrderRequest request, UUID sellerId) {
         User seller = getUserOrThrow(sellerId);
-        SaleOrder order = buildOrder(request.getItems(), seller, SaleOrderStatus.PENDING, null, null);
+        SaleOrder order = buildOrder(request.getItems(), seller, SaleOrderStatus.PENDING, request.getCustomerName(),
+                null);
         saleOrderRepository.save(order);
         return toDto(order);
     }
@@ -144,8 +145,8 @@ public class SaleOrderService {
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private SaleOrder buildOrder(List<OrderItemRequest> items, User seller,
-                                  SaleOrderStatus status,
-                                  String reservedForName, String reservedForPhone) {
+            SaleOrderStatus status,
+            String reservedForName, String reservedForPhone) {
         SaleOrder order = SaleOrder.builder()
                 .seller(seller)
                 .status(status)

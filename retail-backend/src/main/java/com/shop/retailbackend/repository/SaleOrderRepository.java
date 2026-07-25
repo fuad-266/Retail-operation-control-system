@@ -20,6 +20,6 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, UUID> {
     @Query("SELECT DISTINCT o FROM SaleOrder o JOIN FETCH o.seller LEFT JOIN FETCH o.items i LEFT JOIN FETCH i.product WHERE o.status = :status ORDER BY o.createdAt DESC")
     List<SaleOrder> findAllByStatus(@Param("status") SaleOrderStatus status);
 
-    @Query("SELECT o FROM SaleOrder o WHERE o.status = 'RESERVED' AND o.reservationExpiresAt < :now")
-    List<SaleOrder> findExpiredReservations(@Param("now") LocalDateTime now);
+    @Query("SELECT o FROM SaleOrder o WHERE (o.status = 'RESERVED' AND o.reservationExpiresAt < :now) OR (o.status = 'PENDING' AND o.createdAt < :sixHoursAgo)")
+    List<SaleOrder> findExpiredOrders(@Param("now") LocalDateTime now, @Param("sixHoursAgo") LocalDateTime sixHoursAgo);
 }

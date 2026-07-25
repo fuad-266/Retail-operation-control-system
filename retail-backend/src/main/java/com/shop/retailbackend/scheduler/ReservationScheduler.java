@@ -21,37 +21,41 @@ public class ReservationScheduler {
     private final SaleOrderRepository saleOrderRepository;
     private final ProductRepository productRepository;
 
-    private static final String CANCELLATION_REASON =
-            "Auto-cancelled: reservation expired after 6 hours";
+    private static final String CANCELLATION_REASON = "Auto-cancelled: order unpaid/unclaimed after 6 hours";
 
     /**
-     * Runs every 15 minutes. Cancels all RESERVED orders past their expiry,
-     * restoring stock for each. The entire batch runs in one transaction.
+     * Runs every 15 minutes. Cancels all RESERVED and unpaid PENDING orders created
+     * > 6 hours ago,
+     * restoring stock if reserved. The entire batch runs in one transaction.
      */
     @Scheduled(fixedRate = 900_000)
     @Transactional
     public void cancelExpiredReservations() {
-        List<SaleOrder> expired = saleOrderRepository.findExpiredReservations(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime sixHoursAgo = now.minusHours(6);
+        List<SaleOrder> expired = saleOrderRepository.findExpiredOrders(now, sixHoursAgo);
 
         if (expired.isEmpty()) {
             return;
         }
 
-        log.info("Scheduler: cancelling {} expired reservation(s)", expired.size());
+        log.info("Scheduler: cancelling {} expired/unpaid order(s)", expired.size());
 
         for (SaleOrder order : expired) {
-            // Restore stock for every item in this order
-            for (var item : order.getItems()) {
-                var product = item.getProduct();
-                product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
-                productRepository.save(product);
+            // Restore stock if it was RESERVED
+            if (order.getStatus() == SaleOrderStatus.RESERVED) {
+                for (var item : order.getItems()) {
+                    var product = item.getProduct();
+                    product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+                    productRepository.save(product);
+                }
             }
 
             order.setStatus(SaleOrderStatus.CANCELLED);
             order.setCancellationReason(CANCELLATION_REASON);
             saleOrderRepository.save(order);
 
-            log.debug("Auto-cancelled reservation orderId={}", order.getId());
+            log.debug("Auto-cancelled orderId={}", order.getId());
         }
     }
 }

@@ -12,4 +12,6 @@ public class CreateOrderRequest {
     @NotEmpty(message = "Order must contain at least one item")
     @Valid
     private List<OrderItemRequest> items;
+
+    private String customerName;
 }

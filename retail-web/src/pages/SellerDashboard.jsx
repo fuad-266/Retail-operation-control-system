@@ -307,229 +307,256 @@ export default function SellerDashboard() {
 
             {activeTab === 'pos' ? (
                 /* ─── Full Page POS Layout ─── */
-                <div className="pos-workspace full-page-pos">
-                    {/* Left Panel: Catalog & Search */}
-                    <div className="pos-catalog-panel">
-                        {/* Search & Category Filter */}
-                        <div className="pos-filter-bar">
-                            <div className="search-box pos-search">
-                                <Search size={20} />
+                <div className="wholesale-workspace">
+                    {/* Top Bar: Goods / Products Search Bar */}
+                    <div className="wholesale-search-bar">
+                        <div className="search-input-box">
+                            <label htmlFor="seller-product-search">
+                                <Search size={20} className="text-accent-primary" />
+                                <span>SEARCH GOODS / PRODUCTS *</span>
+                            </label>
+                            <div className="search-field-wrapper">
                                 <input
+                                    id="seller-product-search"
                                     type="text"
-                                    placeholder="Search products by name or category…"
                                     value={prodSearch}
                                     onChange={(e) => setProdSearch(e.target.value)}
-                                    id="seller-product-search"
+                                    placeholder="Type product name or category to search (e.g. Maize, Flour, Sugar, Wireless Mouse)…"
+                                    className="wholesale-search-input"
                                 />
                                 {prodSearch && (
-                                    <button className="btn-icon" onClick={() => setProdSearch('')}>
-                                        <X size={16} />
+                                    <button className="btn-icon clear-search-btn" onClick={() => setProdSearch('')}>
+                                        <X size={18} />
                                     </button>
                                 )}
                             </div>
-
-                            {/* Category Pills */}
-                            <div className="category-pills">
-                                {categories.map(cat => (
-                                    <button
-                                        key={cat}
-                                        className={`category-pill ${selectedCategory === cat ? 'active' : ''}`}
-                                        onClick={() => setSelectedCategory(cat)}
-                                    >
-                                        {cat}
-                                    </button>
-                                ))}
-                            </div>
                         </div>
 
-                        {/* Product Grid */}
-                        <div className="pos-product-grid">
-                            {prodLoading ? (
-                                <div className="table-skeleton">
-                                    {[...Array(6)].map((_, i) => <div key={i} className="skeleton-card" />)}
-                                </div>
-                            ) : filteredProducts.length === 0 ? (
-                                <div className="empty-state">
-                                    <Package size={48} />
-                                    <h3>No products found</h3>
-                                    <p>Try searching for a different keyword.</p>
-                                </div>
-                            ) : (
-                                filteredProducts.map(product => {
-                                    const inCart = cart.find(c => c.productId === product.id);
-                                    const isOutOfStock = product.stockQuantity <= 0;
-
-                                    return (
-                                        <div
-                                            key={product.id}
-                                            className={`pos-product-card ${isOutOfStock ? 'out-of-stock' : ''} ${inCart ? 'in-cart' : ''}`}
-                                            onClick={() => handleOpenItemModal(product)}
-                                            id={`product-card-${product.id}`}
-                                        >
-                                            <div className="pos-card-top">
-                                                <div className="pos-card-icon">
-                                                    {product.imageUrl ? (
-                                                        <img src={product.imageUrl} alt={product.name} />
-                                                    ) : (
-                                                        <Package size={28} />
-                                                    )}
-                                                </div>
-                                                {inCart && (
-                                                    <span className="pos-card-badge">
-                                                        <Check size={14} /> {inCart.quantity} in cart
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <div className="pos-card-body">
-                                                <h4 className="pos-product-name">{product.name}</h4>
-                                                <span className="pos-product-category">{product.category || 'General'}</span>
-                                            </div>
-
-                                            <div className="pos-card-footer">
-                                                <span className="pos-product-price">
-                                                    {formatPrice(product.priceKes, product.priceEtb)}
-                                                </span>
-                                                <span className={`pos-stock-tag ${product.stockQuantity < 5 ? 'low' : ''}`}>
-                                                    {isOutOfStock ? 'Out of Stock' : `${product.stockQuantity} in stock`}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            )}
+                        {/* Category Filter Pills in Top Bar */}
+                        <div className="category-pills top-pills">
+                            {categories.map(cat => (
+                                <button
+                                    key={cat}
+                                    className={`category-pill ${selectedCategory === cat ? 'active' : ''}`}
+                                    onClick={() => setSelectedCategory(cat)}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Right Panel: Order Summary & Cart Terminal */}
-                    <div className="pos-cart-panel full-page-cart">
-                        <div className="pos-cart-header">
-                            <div className="cart-header-title">
-                                <ShoppingCart size={24} />
-                                <h2>Order Cart</h2>
+                    {/* Main Workspace: Left Catalog List Rows | Right Order Cart */}
+                    <div className="wholesale-grid">
+                        {/* Left Column: Horizontal Row List of Goods (Not Box Cards) */}
+                        <div className="wholesale-catalog-col">
+                            <div className="catalog-header-info">
+                                <h3>Available Inventory ({filteredProducts.length} items)</h3>
+                                <span className="subtitle">Click any row to configure quantity and add to order sheet</span>
                             </div>
-                            {cart.length > 0 && (
-                                <button className="btn-link-danger" onClick={clearCart} title="Clear Cart">
-                                    Clear All
-                                </button>
-                            )}
+
+                            {/* Goods Row List (Diagonal / Horizontal Rows, NOT Grid Boxes) */}
+                            <div className="pos-product-row-list">
+                                {prodLoading ? (
+                                    <div className="table-skeleton">
+                                        {[...Array(6)].map((_, i) => <div key={i} className="skeleton-row" />)}
+                                    </div>
+                                ) : filteredProducts.length === 0 ? (
+                                    <div className="empty-state">
+                                        <Package size={48} />
+                                        <h3>No goods found matching search</h3>
+                                        <p>Try searching for a different item name or category.</p>
+                                    </div>
+                                ) : (
+                                    filteredProducts.map(product => {
+                                        const inCart = cart.find(c => c.productId === product.id);
+                                        const isOutOfStock = product.stockQuantity <= 0;
+
+                                        return (
+                                            <div
+                                                key={product.id}
+                                                className={`pos-product-row-item ${isOutOfStock ? 'out-of-stock' : ''} ${inCart ? 'in-cart' : ''}`}
+                                                onClick={() => !isOutOfStock && handleOpenItemModal(product)}
+                                                id={`product-row-${product.id}`}
+                                            >
+                                                <div className="row-item-left">
+                                                    <div className="row-item-icon">
+                                                        {product.imageUrl ? (
+                                                            <img src={product.imageUrl} alt={product.name} />
+                                                        ) : (
+                                                            <Package size={22} />
+                                                        )}
+                                                    </div>
+                                                    <div className="row-item-details">
+                                                        <h4 className="row-item-name">{product.name}</h4>
+                                                        <span className="row-item-category">{product.category || 'General'}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="row-item-middle">
+                                                    <span className="row-item-price">
+                                                        {formatPrice(product.priceKes, product.priceEtb)}
+                                                    </span>
+                                                    <span className={`row-stock-badge ${product.stockQuantity < 5 ? 'low' : ''}`}>
+                                                        {isOutOfStock ? 'Out of Stock' : `${product.stockQuantity} in stock`}
+                                                    </span>
+                                                </div>
+
+                                                <div className="row-item-right">
+                                                    {inCart ? (
+                                                        <span className="in-cart-pill">
+                                                            <Check size={14} /> {inCart.quantity} in cart
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            className="btn btn-sm btn-primary row-add-btn"
+                                                            disabled={isOutOfStock}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleOpenItemModal(product);
+                                                            }}
+                                                        >
+                                                            <Plus size={16} /> Add Goods
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
                         </div>
 
-                        {cart.length === 0 ? (
-                            <div className="pos-cart-empty">
-                                <ShoppingBag size={56} />
-                                <h3>Cart is empty</h3>
-                                <p>Click any product on the left to set its quantity, price, and add it to this sale.</p>
-                            </div>
-                        ) : (
-                            <div className="pos-cart-content">
-                                {/* Cart Line Items Table */}
-                                <div className="pos-cart-items-table">
-                                    <div className="cart-table-header">
-                                        <span>Product</span>
-                                        <span>Qty</span>
-                                        <span>Price</span>
-                                        <span>Subtotal</span>
-                                        <span>Action</span>
-                                    </div>
-
-                                    {cart.map(item => (
-                                        <div key={item.productId} className="cart-table-row">
-                                            <div className="cart-col-name">
-                                                <strong>{item.name}</strong>
-                                            </div>
-
-                                            <div className="cart-col-qty">
-                                                <button className="btn-icon-xs" onClick={() => updateQuantity(item.productId, -1)}>
-                                                    <Minus size={12} />
-                                                </button>
-                                                <span>{item.quantity}</span>
-                                                <button
-                                                    className="btn-icon-xs"
-                                                    onClick={() => updateQuantity(item.productId, 1)}
-                                                    disabled={item.quantity >= item.maxStock}
-                                                >
-                                                    <Plus size={12} />
-                                                </button>
-                                            </div>
-
-                                            <div className="cart-col-price">
-                                                KES {item.unitPrice.toFixed(2)}
-                                            </div>
-
-                                            <div className="cart-col-subtotal">
-                                                KES {(item.unitPrice * item.quantity).toFixed(2)}
-                                            </div>
-
-                                            <div className="cart-col-actions">
-                                                <button
-                                                    className="btn-icon btn-sm"
-                                                    onClick={() => handleOpenItemModal(products.find(p => p.id === item.productId) || item)}
-                                                    title="Edit Quantity/Price"
-                                                >
-                                                    <Edit2 size={14} />
-                                                </button>
-                                                <button
-                                                    className="btn-icon btn-danger btn-sm"
-                                                    onClick={() => removeFromCart(item.productId)}
-                                                    title="Remove item"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
+                        {/* Right Panel: Order Summary & Cart Terminal */}
+                        <div className="pos-cart-panel full-page-cart">
+                            <div className="pos-cart-header">
+                                <div className="cart-header-title">
+                                    <ShoppingCart size={24} />
+                                    <h2>Order Cart</h2>
                                 </div>
-
-                                {/* Customer Name Input (Required for Cashier Identification) */}
-                                <div className="pos-reserve-box">
-                                    <div className="form-group" style={{ marginBottom: 0 }}>
-                                        <label htmlFor="order-customer-name" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
-                                            <User size={16} /> Customer Name / Owner *
-                                        </label>
-                                        <input
-                                            id="order-customer-name"
-                                            value={customerName}
-                                            onChange={(e) => setCustomerName(e.target.value)}
-                                            placeholder="e.g. John Doe / Customer Name"
-                                            required
-                                            style={{ marginTop: '0.4rem' }}
-                                        />
-                                        <small className="text-muted" style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem' }}>
-                                            Required so Cashier can identify who is paying. Unpaid orders auto-cancel after 6 hours.
-                                        </small>
-                                    </div>
-                                </div>
-
-                                {/* Alert Notification */}
-                                {submitMsg.text && (
-                                    <div className={`alert alert-${submitMsg.type}`}>{submitMsg.text}</div>
-                                )}
-
-                                {/* Total & Submit Panel */}
-                                <div className="pos-cart-footer">
-                                    <div className="pos-total-row">
-                                        <span>Total Amount:</span>
-                                        <span className="pos-total-amount">{displayTotal}</span>
-                                    </div>
-
-                                    <button
-                                        className="btn btn-primary btn-full pos-submit-btn"
-                                        onClick={handleSubmitOrder}
-                                        disabled={submitLoading || cart.length === 0}
-                                        id="submit-order-btn"
-                                    >
-                                        {submitLoading ? (
-                                            <span className="btn-loading">Sending to Cashier…</span>
-                                        ) : (
-                                            <>
-                                                <Send size={20} /> Complete Sale Order
-                                            </>
-                                        )}
+                                {cart.length > 0 && (
+                                    <button className="btn-link-danger" onClick={clearCart} title="Clear Cart">
+                                        Clear All
                                     </button>
-                                </div>
+                                )}
                             </div>
-                        )}
+
+                            {cart.length === 0 ? (
+                                <div className="pos-cart-empty">
+                                    <ShoppingBag size={56} />
+                                    <h3>Cart is empty</h3>
+                                    <p>Click any product on the left to set its quantity, price, and add it to this sale.</p>
+                                </div>
+                            ) : (
+                                <div className="pos-cart-content">
+                                    {/* Cart Line Items Table */}
+                                    <div className="pos-cart-items-table">
+                                        <div className="cart-table-header">
+                                            <span>Product</span>
+                                            <span>Qty</span>
+                                            <span>Price</span>
+                                            <span>Subtotal</span>
+                                            <span>Action</span>
+                                        </div>
+
+                                        {cart.map(item => (
+                                            <div key={item.productId} className="cart-table-row">
+                                                <div className="cart-col-name">
+                                                    <strong>{item.name}</strong>
+                                                </div>
+
+                                                <div className="cart-col-qty">
+                                                    <button className="btn-icon-xs" onClick={() => updateQuantity(item.productId, -1)}>
+                                                        <Minus size={12} />
+                                                    </button>
+                                                    <span>{item.quantity}</span>
+                                                    <button
+                                                        className="btn-icon-xs"
+                                                        onClick={() => updateQuantity(item.productId, 1)}
+                                                        disabled={item.quantity >= item.maxStock}
+                                                    >
+                                                        <Plus size={12} />
+                                                    </button>
+                                                </div>
+
+                                                <div className="cart-col-price">
+                                                    KES {item.unitPrice.toFixed(2)}
+                                                </div>
+
+                                                <div className="cart-col-subtotal">
+                                                    KES {(item.unitPrice * item.quantity).toFixed(2)}
+                                                </div>
+
+                                                <div className="cart-col-actions">
+                                                    <button
+                                                        className="btn-icon btn-sm"
+                                                        onClick={() => handleOpenItemModal(products.find(p => p.id === item.productId) || item)}
+                                                        title="Edit Quantity/Price"
+                                                    >
+                                                        <Edit2 size={14} />
+                                                    </button>
+                                                    <button
+                                                        className="btn-icon btn-danger btn-sm"
+                                                        onClick={() => removeFromCart(item.productId)}
+                                                        title="Remove item"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Customer Name Input (Required for Cashier Identification) */}
+                                    <div className="pos-reserve-box">
+                                        <div className="form-group" style={{ marginBottom: 0 }}>
+                                            <label htmlFor="order-customer-name" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+                                                <User size={16} /> Customer Name / Owner *
+                                            </label>
+                                            <input
+                                                id="order-customer-name"
+                                                value={customerName}
+                                                onChange={(e) => setCustomerName(e.target.value)}
+                                                placeholder="e.g. John Doe / Customer Name"
+                                                required
+                                                style={{ marginTop: '0.4rem' }}
+                                            />
+                                            <small className="text-muted" style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem' }}>
+                                                Required so Cashier can identify who is paying. Unpaid orders auto-cancel after 6 hours.
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    {/* Alert Notification */}
+                                    {submitMsg.text && (
+                                        <div className={`alert alert-${submitMsg.type}`}>{submitMsg.text}</div>
+                                    )}
+
+                                    {/* Total & Submit Panel */}
+                                    <div className="pos-cart-footer">
+                                        <div className="pos-total-row">
+                                            <span>Total Amount:</span>
+                                            <span className="pos-total-amount">{displayTotal}</span>
+                                        </div>
+
+                                        <button
+                                            className="btn btn-primary btn-full pos-submit-btn"
+                                            onClick={handleSubmitOrder}
+                                            disabled={submitLoading || cart.length === 0}
+                                            id="submit-order-btn"
+                                        >
+                                            {submitLoading ? (
+                                                <span className="btn-loading">Sending to Cashier…</span>
+                                            ) : (
+                                                <>
+                                                    <Send size={20} /> Complete Sale Order
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             ) : (

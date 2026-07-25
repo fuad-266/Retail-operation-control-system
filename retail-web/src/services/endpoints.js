@@ -36,6 +36,7 @@ export const paymentService = {
 
 // ─── Receipts ────────────────────────────
 export const receiptService = {
+    today: () => api.get('/api/receipts/today'),
     get: (receiptNumber) => api.get(`/api/receipts/${receiptNumber}`),
     fulfill: (receiptNumber) => api.put(`/api/receipts/${receiptNumber}/fulfill`),
 };

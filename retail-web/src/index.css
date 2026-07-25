@@ -3014,3 +3014,133 @@ a:hover {
   font-size: 0.825rem;
   border-radius: var(--radius-md);
 }
+
+/* ──────────────────────────────────────────
+   Receipt & Printing
+   ────────────────────────────────────────── */
+.receipt-modal {
+  max-width: 420px;
+  width: 95%;
+}
+
+.receipt-body {
+  background: white;
+  color: #111;
+  padding: 1.5rem;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.receipt-header-info {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px dashed #ccc;
+  padding-bottom: 1rem;
+}
+
+.receipt-number {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.receipt-date {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.receipt-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.receipt-qr-label {
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  color: #555;
+  text-transform: uppercase;
+}
+
+.receipt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.receipt-table th {
+  border-bottom: 1px dashed #ccc;
+  padding-bottom: 0.5rem;
+  text-align: left;
+}
+
+.receipt-table td {
+  padding: 0.5rem 0;
+  vertical-align: top;
+}
+
+.receipt-table .text-right {
+  text-align: right;
+}
+
+.receipt-table .text-center {
+  text-align: center;
+}
+
+.receipt-total-section {
+  border-top: 1px dashed #ccc;
+  padding-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.receipt-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.receipt-kes-ref {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.receipt-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  margin-top: 1rem;
+  color: #444;
+}
+
+.receipt-footer {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #555;
+  border-top: 1px dashed #ccc;
+  padding-top: 1rem;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #receipt-printable,
+  #receipt-printable * {
+    visibility: visible;
+  }
+
+  #receipt-printable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+}

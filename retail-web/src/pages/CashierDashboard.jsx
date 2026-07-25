@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { orderService, paymentService } from '../services/endpoints';
+import { orderService, paymentService, receiptService } from '../services/endpoints';
+import { QRCodeSVG } from 'qrcode.react';
 import {
     Clock,
     CheckCircle,
@@ -12,6 +13,8 @@ import {
     RefreshCw,
     ShoppingBag,
     Globe,
+    Printer,
+    Receipt
 } from 'lucide-react';
 
 export default function CashierDashboard() {
@@ -41,10 +44,18 @@ export default function CashierDashboard() {
     const [rejectReason, setRejectReason] = useState('');
     const [rejectLoading, setRejectLoading] = useState(false);
 
+    // ─── Receipt Modal ─────────────────
+    const [receiptModal, setReceiptModal] = useState(null);
+
+    // ─── Completed Orders ───────────────────
+    const [completedOrders, setCompletedOrders] = useState([]);
+    const [completedLoading, setCompletedLoading] = useState(true);
+
     const fetchAll = () => {
         setPendingLoading(true);
         setReservedLoading(true);
         setOnlineLoading(true);
+        setCompletedLoading(true);
 
         orderService.pendingOrders()
             .then(res => setPendingOrders(res.data))
@@ -60,11 +71,16 @@ export default function CashierDashboard() {
             .then(res => setOnlineOrders(res.data))
             .catch(() => { })
             .finally(() => setOnlineLoading(false));
+
+        receiptService.today()
+            .then(res => setCompletedOrders(res.data))
+            .catch(() => { })
+            .finally(() => setCompletedLoading(false));
     };
 
     useEffect(() => { fetchAll(); }, []);
 
-    // ─── Confirm Payment ───────────────────
+    // ─── Confirm Payment ───────────────
     const handleConfirmPayment = async (e) => {
         e.preventDefault();
         setPayLoading(true);
@@ -73,23 +89,28 @@ export default function CashierDashboard() {
         try {
             const orderId = payModal.id;
             const isOnline = payModal.isOnline;
+            let res;
 
             if (isOnline) {
-                await paymentService.confirmOnline(orderId, payForm);
+                res = await paymentService.confirmOnline(orderId, payForm);
             } else {
-                await paymentService.confirm(orderId, payForm);
+                res = await paymentService.confirm(orderId, payForm);
             }
 
-            setPayMsg({ type: 'success', text: 'Payment confirmed! Receipt generated.' });
-            setTimeout(() => {
-                setPayModal(null);
-                fetchAll();
-            }, 1500);
+            // Close pay modal and show receipt
+            setPayModal(null);
+            setReceiptModal(res.data);
+            fetchAll();
         } catch (err) {
             setPayMsg({ type: 'error', text: err.response?.data?.message || 'Failed to confirm payment.' });
         } finally {
             setPayLoading(false);
         }
+    };
+
+    // ─── Print Receipt ─────────────────
+    const handlePrintReceipt = () => {
+        window.print();
     };
 
     // ─── Reject Online ─────────────────────
@@ -149,6 +170,10 @@ export default function CashierDashboard() {
                 <button className={`tab-btn ${tab === 'online' ? 'active' : ''}`} onClick={() => setTab('online')}>
                     <Globe size={16} /> Online Payments
                     {onlineOrders.length > 0 && <span className="tab-badge">{onlineOrders.length}</span>}
+                </button>
+                <button className={`tab-btn ${tab === 'completed' ? 'active' : ''}`} onClick={() => setTab('completed')}>
+                    <Receipt size={16} /> Completed
+                    {completedOrders.length > 0 && <span className="tab-badge badge-success">{completedOrders.length}</span>}
                 </button>
             </div>
 
@@ -344,6 +369,67 @@ export default function CashierDashboard() {
                 </div>
             )}
 
+            {/* Completed Orders Tab */}
+            {tab === 'completed' && (
+                <div className="tab-content">
+                    {completedLoading ? (
+                        <p className="text-muted">Loading…</p>
+                    ) : completedOrders.length === 0 ? (
+                        <div className="empty-state">
+                            <Receipt size={48} />
+                            <p>No completed orders today</p>
+                        </div>
+                    ) : (
+                        <div className="table-wrapper">
+                            <table className="data-table" id="completed-orders-table">
+                                <thead>
+                                    <tr>
+                                        <th>Receipt #</th>
+                                        <th>Cashier</th>
+                                        <th>Items</th>
+                                        <th>Method</th>
+                                        <th>Date</th>
+                                        <th>View</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {completedOrders.map(receipt => (
+                                        <tr key={receipt.id}>
+                                            <td>
+                                                <strong className="text-accent-success">{receipt.receiptNumber}</strong>
+                                                <div style={{ fontSize: '0.75rem', marginTop: '0.2rem' }}>
+                                                    {receipt.paymentCurrency} {Number(receipt.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                </div>
+                                            </td>
+                                            <td>{receipt.confirmedByName}</td>
+                                            <td className="td-items">
+                                                {receipt.items?.map((item, i) => (
+                                                    <span key={i} className="order-item-tag">{item.productName} × {item.quantity}</span>
+                                                ))}
+                                            </td>
+                                            <td>
+                                                <span className={`status-badge ${receipt.status === 'PAID' ? 'active' : ''}`}>
+                                                    {receipt.paymentMethod?.replace('_', ' ')}
+                                                </span>
+                                            </td>
+                                            <td>{new Date(receipt.createdAt).toLocaleString()}</td>
+                                            <td>
+                                                <button
+                                                    className="btn btn-sm btn-outline"
+                                                    onClick={() => setReceiptModal(receipt)}
+                                                >
+                                                    <Printer size={14} /> Receipt
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* ─── Payment Confirmation Modal ─── */}
             {payModal && (
                 <div className="modal-overlay" onClick={() => setPayModal(null)}>
@@ -424,6 +510,90 @@ export default function CashierDashboard() {
                                     {rejectLoading ? 'Rejecting…' : 'Reject Payment'}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── Receipt Modal ─── */}
+            {receiptModal && (
+                <div className="modal-overlay" onClick={() => setReceiptModal(null)}>
+                    <div className="modal receipt-modal" onClick={(e) => e.stopPropagation()} id="receipt-modal">
+                        <div className="modal-header">
+                            <h2>✅ Payment Receipt</h2>
+                            <button className="btn-icon" onClick={() => setReceiptModal(null)}><X size={20} /></button>
+                        </div>
+
+                        <div className="receipt-body" id="receipt-printable">
+                            <div className="receipt-header-info">
+                                <h3 className="receipt-number">{receiptModal.receiptNumber}</h3>
+                                <p className="receipt-date">{new Date(receiptModal.createdAt).toLocaleString()}</p>
+                            </div>
+
+                            <div className="receipt-qr">
+                                <QRCodeSVG
+                                    value={receiptModal.receiptNumber}
+                                    size={160}
+                                    level="H"
+                                    includeMargin={true}
+                                />
+                                <p className="receipt-qr-label">Scan to verify</p>
+                            </div>
+
+                            <div className="receipt-items">
+                                <table className="receipt-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>Qty</th>
+                                            {receiptModal.items?.[0]?.unitPrice != null && <th>Price</th>}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {receiptModal.items?.map((item, i) => (
+                                            <tr key={i}>
+                                                <td>{item.productName}</td>
+                                                <td className="text-center">{item.quantity}</td>
+                                                {item.unitPrice != null && (
+                                                    <td className="text-right">
+                                                        KES {Number(item.unitPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="receipt-total-section">
+                                <div className="receipt-total-row">
+                                    <span>Total ({receiptModal.paymentCurrency}):</span>
+                                    <strong>
+                                        {receiptModal.paymentCurrency} {Number(receiptModal.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </strong>
+                                </div>
+                                {receiptModal.paymentCurrency !== 'KES' && (
+                                    <div className="receipt-total-row receipt-kes-ref">
+                                        <span>KES Equivalent:</span>
+                                        <span>KES {Number(receiptModal.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                )}
+                                <div className="receipt-meta">
+                                    <span>Method: {receiptModal.paymentMethod?.replace('_', ' ')}</span>
+                                    <span>Cashier: {receiptModal.confirmedByName}</span>
+                                </div>
+                            </div>
+
+                            <div className="receipt-footer">
+                                <p>Present this receipt to the Goods Staff to collect your items.</p>
+                            </div>
+                        </div>
+
+                        <div className="modal-actions">
+                            <button className="btn btn-outline" onClick={() => setReceiptModal(null)}>Close</button>
+                            <button className="btn btn-primary" onClick={handlePrintReceipt} id="print-receipt-btn">
+                                <Printer size={16} /> Print Receipt
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,4 +29,7 @@ public interface ReceiptRepository extends JpaRepository<Receipt, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT COUNT(r) FROM Receipt r WHERE CAST(r.createdAt AS date) = :date")
     long countByCreatedAtDate(@Param("date") LocalDate date);
+
+    @Query("SELECT r FROM Receipt r WHERE CAST(r.createdAt AS date) = :date ORDER BY r.createdAt DESC")
+    List<Receipt> findByCreatedAtDateOrderByCreatedAtDesc(@Param("date") LocalDate date);
 }

@@ -95,10 +95,20 @@ public class PaymentService {
     // ── Receipt retrieval ─────────────────────────────────────────────────
 
     @PreAuthorize("hasAnyRole('GOODS_STAFF','OWNER','CASHIER')")
+    @Transactional(readOnly = true)
     public ReceiptDto getReceipt(String receiptNumber) {
         Receipt receipt = receiptRepository.findByReceiptNumber(receiptNumber)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Receipt not found"));
         return toDto(receipt);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','CASHIER')")
+    @Transactional(readOnly = true)
+    public List<ReceiptDto> getTodayReceipts() {
+        return receiptRepository.findByCreatedAtDateOrderByCreatedAtDesc(LocalDate.now())
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     // ── Goods Staff: fulfill receipt ─────────────────────────────────────

@@ -100,12 +100,20 @@ export default function SellerDashboard() {
 
         const existing = cart.find(c => c.productId === product.id);
         setSelectedProduct(product);
+        const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
+
         if (existing) {
             setItemQty(existing.quantity);
-            setItemUnitPrice(existing.unitPrice.toString());
+            const val = currency === 'ETB' ? (existing.unitPrice / rate) : existing.unitPrice;
+            setItemUnitPrice(val.toFixed(2));
         } else {
             setItemQty(1);
-            setItemUnitPrice(product.priceKes.toString());
+            if (currency === 'ETB') {
+                const etbVal = product.priceEtb != null ? Number(product.priceEtb) : (Number(product.priceKes) / rate);
+                setItemUnitPrice(etbVal.toFixed(2));
+            } else {
+                setItemUnitPrice(Number(product.priceKes).toFixed(2));
+            }
         }
     };
 
@@ -113,7 +121,10 @@ export default function SellerDashboard() {
     const handleConfirmCartItem = () => {
         if (!selectedProduct) return;
         const parsedQty = Math.max(1, Math.min(parseInt(itemQty, 10) || 1, selectedProduct.stockQuantity));
-        const parsedPrice = Math.max(0, parseFloat(itemUnitPrice) || Number(selectedProduct.priceKes));
+        const inputVal = parseFloat(itemUnitPrice) || 0;
+        const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
+        const baseKesPrice = currency === 'ETB' ? (inputVal * rate) : inputVal;
+        const parsedPrice = Math.max(0, baseKesPrice);
 
         setCart(prev => {
             const existing = prev.find(c => c.productId === selectedProduct.id);
@@ -185,6 +196,16 @@ export default function SellerDashboard() {
             return `ETB ${Number(priceKes / rate).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
         }
         return `KES ${Number(priceKes).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+    };
+
+    const formatCartPrice = (amountInKes) => {
+        const num = Number(amountInKes || 0);
+        if (currency === 'ETB') {
+            const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
+            const etbVal = num / rate;
+            return `ETB ${etbVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+        return `KES ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     // ─── Order Submission ───────────────────
@@ -485,11 +506,11 @@ export default function SellerDashboard() {
                                                 </div>
 
                                                 <div className="cart-col-price">
-                                                    KES {item.unitPrice.toFixed(2)}
+                                                    {formatCartPrice(item.unitPrice)}
                                                 </div>
 
                                                 <div className="cart-col-subtotal">
-                                                    KES {(item.unitPrice * item.quantity).toFixed(2)}
+                                                    {formatCartPrice(item.unitPrice * item.quantity)}
                                                 </div>
 
                                                 <div className="cart-col-actions">
@@ -700,7 +721,7 @@ export default function SellerDashboard() {
                             </div>
 
                             <div className="form-group large-input-group">
-                                <label htmlFor="modal-unit-price">Selling Unit Price (KES) *</label>
+                                <label htmlFor="modal-unit-price">Selling Unit Price ({currency}) *</label>
                                 <input
                                     id="modal-unit-price"
                                     type="number"
@@ -717,7 +738,7 @@ export default function SellerDashboard() {
                             <div className="item-subtotal-banner">
                                 <span>Line Subtotal:</span>
                                 <strong>
-                                    KES {((parseFloat(itemUnitPrice) || 0) * itemQty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    {formatCartPrice((parseFloat(itemUnitPrice) || 0) * itemQty)}
                                 </strong>
                             </div>
                         </div>

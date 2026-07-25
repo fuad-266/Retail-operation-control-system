@@ -127,20 +127,20 @@
   - Create `ProtectedRoute` component that checks role before rendering; redirect to login if no token
   - **Requirements**: 2.4, 2.5, 14.1
 
-- [ ] 14. Build Login screen and role-based routing
+- [x] 14. Build Login screen and role-based routing
   - Build `LoginPage`: form with phone/email + password fields; call POST /api/auth/login; store JWT and role; redirect to role-specific dashboard
   - No register link anywhere on the page
   - Implement role-based routing: OWNER → /owner, CASHIER → /cashier, SELLER → /seller, GOODS_STAFF → /goods
   - Implement shared `NavBar` with currency toggle (KES / ETB buttons); active button highlighted; switch updates displayed prices instantly; persist preference via PUT /api/users/me/currency-preference
   - **Requirements**: 1.1, 11.9
 
-- [ ] 15. Build Owner dashboard and Products page
+- [x] 15. Build Owner dashboard and Products page
   - Build `OwnerDashboard`: cards for today's revenue, pending orders count, low stock count; display warning banner if exchange rate stale (staleRateWarning=true from API); quick nav links to all sections
   - Build `ProductsPage`: table with columns Name, Category, Buying Price (KES), Selling Price (KES + ETB), Profit, Margin%, Stock, Status; low-stock badge; Add / Edit / Deactivate buttons
   - Build `ProductForm` modal: fields name, category, buyingPrice (KES), price (KES), stockQuantity, minStockAlert, imageUrl; client-side validation matching backend rules
   - **Requirements**: 3.1–3.7, 11.6, 13.4
 
-- [ ] 16. Build Seller dashboard
+- [x] 16. Build Seller dashboard
   - Build `SellerDashboard`: two sections — Create Order and My Orders
   - Create Order form: product search/select, quantity typed directly into quantity field (editable), editable unit price (pre-filled from product price), add to cart; cart summary with live-updating total in selected currency; single "Submit" button; reserve toggle (ON/OFF)
   - Reserve toggle ON: reveals a single field — Customer name (required); no phone number field; reserve toggle OFF: standard order (no extra fields)
@@ -148,7 +148,7 @@
   - Add Customer button: opens form with fullName (required), phoneNumber (required), email (optional), temporaryPassword (required); on success show confirmation with credentials
   - **Requirements**: 4.1–4.10, 1.3
 
-- [ ] 17. Build Cashier dashboard
+- [x] 17. Build Cashier dashboard
   - Build `CashierDashboard` with two tabs: Pending Orders and Reserved Orders
   - Pending tab: table of PENDING orders with seller name, items, total in selected currency; "Confirm Payment" button
   - Reserved tab: table of RESERVED orders with customer name, phone, expiry time; expired rows highlighted red with "Expired" badge; "Convert to Sale" button
@@ -157,13 +157,13 @@
   - Reject modal: reason text field; submit calls reject endpoint
   - **Requirements**: 5.1, 9.1–9.5, 10.1
 
-- [ ] 18. Build Goods Staff screen
+- [x] 18. Build Goods Staff screen
   - Build `GoodsStaffPage`: search box for receipt number; on submit call GET /api/receipts/{receiptNumber}; display receipt details: items (with or without prices per setting), total in payment currency, status
   - "Release Goods" button: calls PUT /api/receipts/{receiptNumber}/fulfill; disabled if status is FULFILLED; show error message "Receipt already fulfilled." on 409
   - Show 404 error clearly if receipt not found
   - **Requirements**: 5.6–5.8
 
-- [ ] 19. Build Owner Reports and Settings pages
+- [x] 19. Build Owner Reports and Settings pages
   - Build `ReportsPage`: date range picker (from/to); Sales Summary table; Revenue table with COGS, profit, margin; Seller Leaderboard table; Inventory table with low-stock badges; Revenue by product bar chart using recharts
   - Build `SettingsPage` with three sections:
     - Receipt Settings: toggle for receipt_show_item_prices (ON/OFF)

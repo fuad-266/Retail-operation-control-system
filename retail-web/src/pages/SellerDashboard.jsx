@@ -168,16 +168,21 @@ export default function SellerDashboard() {
     }, [cart]);
 
     const displayTotal = useMemo(() => {
-        if (currency === 'ETB' && exchangeRate) {
-            const etb = cartTotalKes / exchangeRate.rate;
+        if (currency === 'ETB') {
+            const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
+            const etb = cartTotalKes / rate;
             return `ETB ${etb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
         return `KES ${cartTotalKes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }, [cartTotalKes, currency, exchangeRate]);
 
     const formatPrice = (priceKes, priceEtb) => {
-        if (currency === 'ETB' && priceEtb != null) {
-            return `ETB ${Number(priceEtb).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        if (currency === 'ETB') {
+            if (priceEtb != null) {
+                return `ETB ${Number(priceEtb).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+            }
+            const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
+            return `ETB ${Number(priceKes / rate).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
         }
         return `KES ${Number(priceKes).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
     };

@@ -122,10 +122,12 @@ export default function CashierDashboard() {
 
     const formatAmount = (amount) => {
         const num = Number(amount || 0);
-        if (currency === 'ETB' && exchangeRate) {
-            return `ETB ${(num / exchangeRate.rate).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        if (currency === 'ETB') {
+            const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
+            const etbVal = num / rate;
+            return `ETB ${etbVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
-        return `KES ${num.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        return `KES ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     return (

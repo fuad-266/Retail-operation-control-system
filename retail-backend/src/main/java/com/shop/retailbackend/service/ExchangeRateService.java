@@ -20,8 +20,10 @@ public class ExchangeRateService {
      */
     public ExchangeRateSetting getActiveRate() {
         return exchangeRateRepository.findMostRecent()
-                .orElseThrow(() -> new IllegalStateException(
-                        "No exchange rate configured. Please set an exchange rate first."));
+                .orElse(ExchangeRateSetting.builder()
+                        .rate(new BigDecimal("1.00"))
+                        .label("1 KES = 1.00 ETB (Default)")
+                        .build());
     }
 
     /**

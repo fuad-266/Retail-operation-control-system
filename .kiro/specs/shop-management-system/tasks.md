@@ -11,7 +11,7 @@
 - [ ] 2. Create all JPA entities and repositories
   - Create `User` entity with fields: id (UUID), fullName, phoneNumber (unique), email (nullable), password, role (enum: OWNER, CASHIER, SELLER, GOODS_STAFF, CUSTOMER), isActive (default true), preferredCurrency (default ETB), createdAt
   - Create `Product` entity with fields: id, name, description, category, price (KES), buyingPrice (nullable, KES), stockQuantity, minStockAlert, imageUrl, isActive, createdAt; add `@Version` field for optimistic locking
-  - Create `SaleOrder` entity with fields: id, seller (FK→User), status (enum: RESERVED, PENDING, PAID, CANCELLED), totalAmount, reservedForName, reservedForPhone, reservationExpiresAt, cancellationReason, createdAt; with `@OneToMany` to SaleOrderItem
+  - Create `SaleOrder` entity with fields: id, seller (FK→User), status (enum: RESERVED, PENDING, PAID, CANCELLED), totalAmount, reservedForName, reservedForPhone (nullable, optional), reservationExpiresAt, cancellationReason, createdAt; with `@OneToMany` to SaleOrderItem
   - Create `SaleOrderItem` entity with fields: id, order (FK→SaleOrder), product (FK→Product), quantity, unitPrice
   - Create `Receipt` entity with fields: id, receiptNumber (unique), order (FK→SaleOrder nullable), onlineOrder (FK→OnlineOrder nullable), confirmedBy (FK→User), totalAmount, amount, paymentCurrency, paymentMethod (enum: CASH, BANK_TRANSFER, MOBILE_MONEY), exchangeRateUsed, status (enum: PAID, FULFILLED), createdAt
   - Create `OnlineOrder` entity with fields: id, customer (FK→User), status (enum: PENDING_PAYMENT, SCREENSHOT_SUBMITTED, PAYMENT_REJECTED, PAID, PROCESSING, READY, DELIVERED, CANCELLED), totalAmount, deliveryAddress, paymentScreenshotUrl, paymentReference, rejectionReason, createdAt; with `@OneToMany` to OnlineOrderItem
@@ -42,8 +42,7 @@
   - **Requirements**: 3.1–3.9, 11.1, 11.8, 14.4
 
 - [ ] 5. Implement Sale Order API (in-store)
-  - Implement `SaleOrderService.createOrder()`: SELLER only; validate items non-empty, products active; snapshot unitPrice from product.price; compute totalAmount; set status=PENDING; do NOT deduct stock
-  - Implement `SaleOrderService.createReservedOrder()`: SELLER only; validate all items have sufficient stock (reject entire request atomically if any item fails); deduct stock immediately; set status=RESERVED, reservationExpiresAt=NOW()+6h
+  - Implement `SaleOrderService.createOrder()`: SELLER only; accept optional `reserve` boolean flag (default false); validate items non-empty, products active; snapshot unitPrice from product.price; compute totalAmount; if reserve=false → set status=PENDING, do NOT deduct stock; if reserve=true → validate reservedForName is present and non-blank (return 400 if missing/blank), reservedForPhone is optional (no validation needed), validate all items have sufficient stock (reject entire request atomically if any item fails), deduct stock immediately, set status=RESERVED, reservationExpiresAt=NOW()+6h
   - Implement cancel: SELLER can cancel own PENDING or RESERVED orders only (403 for other sellers' orders, 404 for not found); restore stock if was RESERVED
   - Implement convert-to-pending: SELLER or CASHIER; validate order is currently RESERVED; update status=PENDING; no stock change; return 409 if not RESERVED
   - Implement list endpoints: GET /api/orders/my (SELLER — own only), GET /api/orders/pending (OWNER, CASHIER), GET /api/orders/reserved (OWNER, CASHIER)
@@ -143,8 +142,8 @@
 
 - [ ] 16. Build Seller dashboard
   - Build `SellerDashboard`: two sections — Create Order and My Orders
-  - Create Order form: product search/select, quantity input, add to cart; cart summary with totals in selected currency; "Create Order" and "Reserve for Customer" buttons
-  - Reserve form: same cart + customer name (required), customer phone (required)
+  - Create Order form: product search/select, quantity typed directly into quantity field (editable), editable unit price (pre-filled from product price), add to cart; cart summary with live-updating total in selected currency; single "Submit" button; reserve toggle (ON/OFF)
+  - Reserve toggle ON: reveals a single field — Customer name (required); no phone number field; reserve toggle OFF: standard order (no extra fields)
   - My Orders list: table showing order status (PENDING / RESERVED / PAID / CANCELLED), cancellation reason if CANCELLED; Cancel button on PENDING and RESERVED orders; Convert to Sale button on RESERVED
   - Add Customer button: opens form with fullName (required), phoneNumber (required), email (optional), temporaryPassword (required); on success show confirmation with credentials
   - **Requirements**: 4.1–4.10, 1.3

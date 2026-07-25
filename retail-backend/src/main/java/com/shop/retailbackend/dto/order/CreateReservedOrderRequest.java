@@ -17,6 +17,6 @@ public class CreateReservedOrderRequest {
     @NotBlank(message = "Customer name is required for reservations")
     private String reservedForName;
 
-    @NotBlank(message = "Customer phone is required for reservations")
+    // Phone is optional
     private String reservedForPhone;
 }

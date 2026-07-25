@@ -23,6 +23,7 @@ public class SaleOrderService {
     private final SaleOrderRepository saleOrderRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final ExchangeRateService exchangeRateService;
 
     // ── Create PENDING order (no stock deduction) ─────────────────────────
 
@@ -200,7 +201,11 @@ public class SaleOrderService {
                         .productId(i.getProduct().getId())
                         .productName(i.getProduct().getName())
                         .quantity(i.getQuantity())
-                        .unitPrice(i.getUnitPrice())
+                        .unitPriceKes(i.getUnitPrice())
+                        .unitPriceEtb(exchangeRateService.convertKesToEtb(i.getUnitPrice()))
+                        .subtotalKes(i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
+                        .subtotalEtb(exchangeRateService
+                                .convertKesToEtb(i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQuantity()))))
                         .build())
                 .collect(Collectors.toList());
 
@@ -209,7 +214,8 @@ public class SaleOrderService {
                 .sellerId(order.getSeller().getId())
                 .sellerName(order.getSeller().getFullName())
                 .status(order.getStatus())
-                .totalAmount(order.getTotalAmount())
+                .totalAmountKes(order.getTotalAmount())
+                .totalAmountEtb(exchangeRateService.convertKesToEtb(order.getTotalAmount()))
                 .reservedForName(order.getReservedForName())
                 .reservedForPhone(order.getReservedForPhone())
                 .reservationExpiresAt(order.getReservationExpiresAt())

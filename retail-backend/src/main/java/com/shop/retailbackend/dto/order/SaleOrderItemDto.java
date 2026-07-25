@@ -14,5 +14,8 @@ public class SaleOrderItemDto {
     private UUID productId;
     private String productName;
     private int quantity;
-    private BigDecimal unitPrice;   // KES
+    private BigDecimal unitPriceKes;
+    private BigDecimal unitPriceEtb;
+    private BigDecimal subtotalKes;
+    private BigDecimal subtotalEtb;
 }

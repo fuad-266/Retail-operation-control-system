@@ -120,14 +120,11 @@ export default function CashierDashboard() {
 
     const isExpired = (expiresAt) => expiresAt && new Date(expiresAt) < new Date();
 
-    const formatAmount = (amount) => {
-        const num = Number(amount || 0);
+    const formatAmount = (kesAmount, etbAmount) => {
         if (currency === 'ETB') {
-            const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
-            const etbVal = num / rate;
-            return `ETB ${etbVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            return `ETB ${(Number(etbAmount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
-        return `KES ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return `KES ${(Number(kesAmount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     return (
@@ -192,7 +189,7 @@ export default function CashierDashboard() {
                                                     <span key={i} className="order-item-tag">{item.productName} × {item.quantity}</span>
                                                 ))}
                                             </td>
-                                            <td>{formatAmount(order.totalAmount)}</td>
+                                            <td>{formatAmount(order.totalAmountKes, order.totalAmountEtb)}</td>
                                             <td>
                                                 <div>{new Date(order.createdAt).toLocaleString()}</div>
                                                 <span className="text-muted" style={{ fontSize: '0.75rem' }}>Expires in 6h if unpaid</span>
@@ -253,7 +250,7 @@ export default function CashierDashboard() {
                                                     <span key={i} className="order-item-tag">{item.productName} × {item.quantity}</span>
                                                 ))}
                                             </td>
-                                            <td>{formatAmount(order.totalAmount)}</td>
+                                            <td>{formatAmount(order.totalAmountKes, order.totalAmountEtb)}</td>
                                             <td>
                                                 {isExpired(order.reservationExpiresAt) ? (
                                                     <span className="status-badge expired">
@@ -315,7 +312,7 @@ export default function CashierDashboard() {
                                                     <span key={i} className="order-item-tag">{item.productName} × {item.quantity}</span>
                                                 ))}
                                             </td>
-                                            <td>{formatAmount(order.totalAmount)}</td>
+                                            <td>{formatAmount(order.totalAmountKes, order.totalAmountEtb)}</td>
                                             <td>{order.paymentReference || '—'}</td>
                                             <td>{new Date(order.createdAt).toLocaleString()}</td>
                                             <td className="td-actions">
@@ -357,7 +354,7 @@ export default function CashierDashboard() {
                         </div>
 
                         <div className="payment-summary">
-                            <p><strong>Total: </strong>KES {Number(payModal.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                            <p><strong>Total: </strong>{formatAmount(payModal.totalAmountKes, payModal.totalAmountEtb)}</p>
                             {payModal.sellerName && <p><strong>Seller: </strong>{payModal.sellerName}</p>}
                         </div>
 

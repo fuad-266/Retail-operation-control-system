@@ -17,7 +17,8 @@ public class SaleOrderDto {
     private UUID sellerId;
     private String sellerName;
     private SaleOrderStatus status;
-    private BigDecimal totalAmount;     // KES
+    private BigDecimal totalAmountKes;
+    private BigDecimal totalAmountEtb;
     private String reservedForName;
     private String reservedForPhone;
     private LocalDateTime reservationExpiresAt;

@@ -100,20 +100,12 @@ export default function SellerDashboard() {
 
         const existing = cart.find(c => c.productId === product.id);
         setSelectedProduct(product);
-        const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
-
         if (existing) {
             setItemQty(existing.quantity);
-            const val = currency === 'ETB' ? (existing.unitPrice / rate) : existing.unitPrice;
-            setItemUnitPrice(val.toFixed(2));
+            setItemUnitPrice(existing.unitPrice.toString());
         } else {
             setItemQty(1);
-            if (currency === 'ETB') {
-                const etbVal = product.priceEtb != null ? Number(product.priceEtb) : (Number(product.priceKes) / rate);
-                setItemUnitPrice(etbVal.toFixed(2));
-            } else {
-                setItemUnitPrice(Number(product.priceKes).toFixed(2));
-            }
+            setItemUnitPrice(product.priceKes.toString());
         }
     };
 
@@ -121,17 +113,15 @@ export default function SellerDashboard() {
     const handleConfirmCartItem = () => {
         if (!selectedProduct) return;
         const parsedQty = Math.max(1, Math.min(parseInt(itemQty, 10) || 1, selectedProduct.stockQuantity));
-        const inputVal = parseFloat(itemUnitPrice) || 0;
-        const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
-        const baseKesPrice = currency === 'ETB' ? (inputVal * rate) : inputVal;
-        const parsedPrice = Math.max(0, baseKesPrice);
+        const parsedPrice = Math.max(0, parseFloat(itemUnitPrice) || Number(selectedProduct.priceKes));
+        const priceChanged = parsedPrice !== selectedProduct.priceKes;
 
         setCart(prev => {
             const existing = prev.find(c => c.productId === selectedProduct.id);
             if (existing) {
                 return prev.map(c =>
                     c.productId === selectedProduct.id
-                        ? { ...c, quantity: parsedQty, unitPrice: parsedPrice }
+                        ? { ...c, quantity: parsedQty, unitPrice: parsedPrice, isOverride: priceChanged }
                         : c
                 );
             }
@@ -143,6 +133,7 @@ export default function SellerDashboard() {
                 priceKes: selectedProduct.priceKes,
                 priceEtb: selectedProduct.priceEtb,
                 unitPrice: parsedPrice,
+                isOverride: priceChanged,
                 quantity: parsedQty,
                 maxStock: selectedProduct.stockQuantity,
             }];
@@ -174,38 +165,32 @@ export default function SellerDashboard() {
     };
 
     // ─── Total Calculation ──────────────────
-    const cartTotalKes = useMemo(() => {
-        return cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-    }, [cart]);
-
     const displayTotal = useMemo(() => {
-        if (currency === 'ETB') {
-            const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
-            const etb = cartTotalKes / rate;
-            return `ETB ${etb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const totalKes = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+        const totalEtb = cart.reduce((sum, item) => {
+            const etbComponent = item.isOverride ? 0 : (item.priceEtb * item.quantity);
+            return sum + etbComponent;
+        }, 0);
+
+        // If the cart has overrides, we can't reliably show a pure backend ETB total without a live backend calc.
+        // It's safest to rely primarily on KES or indicate manual pricing isn't fully converted in real-time.
+        // But since the API will always return ETB for the cashier, we just format the subtotal of what we know.
+        const hasOverrides = cart.some(c => c.isOverride);
+
+        if (currency === 'ETB' && !hasOverrides) {
+            return `ETB ${totalEtb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
-        return `KES ${cartTotalKes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }, [cartTotalKes, currency, exchangeRate]);
+        if (currency === 'ETB' && hasOverrides) {
+            return `ETB (Manual KES OVERRIDE)`; // No live frontend math allowed per instruction 4
+        }
+        return `KES ${totalKes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }, [cart, currency]);
 
     const formatPrice = (priceKes, priceEtb) => {
-        if (currency === 'ETB') {
-            if (priceEtb != null) {
-                return `ETB ${Number(priceEtb).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-            }
-            const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
-            return `ETB ${Number(priceKes / rate).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        if (currency === 'ETB' && priceEtb != null) {
+            return `ETB ${Number(priceEtb).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
         }
         return `KES ${Number(priceKes).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-    };
-
-    const formatCartPrice = (amountInKes) => {
-        const num = Number(amountInKes || 0);
-        if (currency === 'ETB') {
-            const rate = (exchangeRate && exchangeRate.rate) ? Number(exchangeRate.rate) : 1;
-            const etbVal = num / rate;
-            return `ETB ${etbVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        }
-        return `KES ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     // ─── Order Submission ───────────────────
@@ -506,11 +491,14 @@ export default function SellerDashboard() {
                                                 </div>
 
                                                 <div className="cart-col-price">
-                                                    {formatCartPrice(item.unitPrice)}
+                                                    {item.isOverride ? `KES ${Number(item.unitPrice).toFixed(2)}` : formatPrice(item.unitPrice, item.priceEtb)}
                                                 </div>
 
                                                 <div className="cart-col-subtotal">
-                                                    {formatCartPrice(item.unitPrice * item.quantity)}
+                                                    {item.isOverride
+                                                        ? `KES ${(item.unitPrice * item.quantity).toFixed(2)}`
+                                                        : formatPrice(item.unitPrice * item.quantity, item.priceEtb * item.quantity)
+                                                    }
                                                 </div>
 
                                                 <div className="cart-col-actions">
@@ -721,7 +709,7 @@ export default function SellerDashboard() {
                             </div>
 
                             <div className="form-group large-input-group">
-                                <label htmlFor="modal-unit-price">Selling Unit Price ({currency}) *</label>
+                                <label htmlFor="modal-unit-price">Selling Unit Price (KES) *</label>
                                 <input
                                     id="modal-unit-price"
                                     type="number"
@@ -738,7 +726,7 @@ export default function SellerDashboard() {
                             <div className="item-subtotal-banner">
                                 <span>Line Subtotal:</span>
                                 <strong>
-                                    {formatCartPrice((parseFloat(itemUnitPrice) || 0) * itemQty)}
+                                    KES {((parseFloat(itemUnitPrice) || 0) * itemQty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </strong>
                             </div>
                         </div>

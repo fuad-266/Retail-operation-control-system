@@ -1,0 +1,56 @@
+import React from 'react'
+import { createStackNavigator } from '@react-navigation/stack'
+import { useAuth } from '../context/AuthContext'
+
+// Screens
+import LoadingScreen from '../screens/LoadingScreen'
+import LoginScreen from '../screens/LoginScreen'
+import HomeScreen from '../screens/HomeScreen'
+import ProductDetailScreen from '../screens/ProductDetailScreen'
+import CartScreen from '../screens/CartScreen'
+import CheckoutScreen from '../screens/CheckoutScreen'
+import PaymentSubmissionScreen from '../screens/PaymentSubmissionScreen'
+import MyOrdersScreen from '../screens/MyOrdersScreen'
+import OrderDetailScreen from '../screens/OrderDetailScreen'
+
+export type RootStackParamList = {
+  Login: undefined
+  Home: undefined
+  ProductDetail: { productId: string }
+  Cart: undefined
+  Checkout: undefined
+  PaymentSubmission: { orderId: string }
+  MyOrders: undefined
+  OrderDetail: { orderId: string }
+}
+
+const Stack = createStackNavigator<RootStackParamList>()
+
+export function AppStack() {
+  const { isAuthenticated, loading, user } = useAuth()
+
+  if (loading) {
+    return <LoadingScreen />
+  }
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!isAuthenticated ? (
+        <Stack.Screen name="Login" component={LoginScreen} />
+      ) : user?.role === 'CUSTOMER' ? (
+        <>
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+          <Stack.Screen name="Cart" component={CartScreen} />
+          <Stack.Screen name="Checkout" component={CheckoutScreen} />
+          <Stack.Screen name="PaymentSubmission" component={PaymentSubmissionScreen} />
+          <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
+          <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+        </>
+      ) : (
+        // Non-customer roles should use web interface
+        <Stack.Screen name="Login" component={LoginScreen} />
+      )}
+    </Stack.Navigator>
+  )
+}

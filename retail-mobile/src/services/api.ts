@@ -1,7 +1,7 @@
 import axios from 'axios'
 import * as SecureStore from 'expo-secure-store'
 
-const API_BASE_URL = 'http://192.168.1.100:8080/api' // Replace with your backend IP
+const API_BASE_URL = 'http://localhost:8080/api' // Replace with your backend IP
 
 const api = axios.create({
   baseURL: API_BASE_URL,

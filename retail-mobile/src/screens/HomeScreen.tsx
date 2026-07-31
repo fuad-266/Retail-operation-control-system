@@ -15,12 +15,14 @@ import { StackNavigationProp } from '@react-navigation/stack'
 import { RootStackParamList } from '../navigation/AppStack'
 import { productsService, ProductDto } from '../services/products.service'
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>()
   const { logout } = useAuth()
+  const { getTotalItems } = useCart()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
 
@@ -36,6 +38,8 @@ export default function HomeScreen() {
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory
     return matchesSearch && matchesCategory
   })
+
+  const cartItemCount = getTotalItems()
 
   const renderProduct = ({ item }: { item: ProductDto }) => (
     <TouchableOpacity
@@ -105,16 +109,21 @@ export default function HomeScreen() {
         <Text style={styles.title}>Shop</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity
-            style={styles.cartButton}
+            style={styles.iconButton}
             onPress={() => navigation.navigate('Cart')}
           >
-            <Text style={styles.cartButtonText}>🛒</Text>
+            <Text style={styles.iconText}>🛒</Text>
+            {cartItemCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{cartItemCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.ordersButton}
-            onPress={() => navigation.navigate('MyOrders')}
+            style={styles.iconButton}
+            onPress={() => navigation.navigate('Orders')}
           >
-            <Text style={styles.ordersButtonText}>📋</Text>
+            <Text style={styles.iconText}>📋</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.logoutButton} onPress={logout}>
             <Text style={styles.logoutButtonText}>Logout</Text>
@@ -180,17 +189,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  cartButton: {
+  iconButton: {
     padding: 8,
+    position: 'relative',
   },
-  cartButtonText: {
+  iconText: {
     fontSize: 20,
   },
-  ordersButton: {
-    padding: 8,
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
   },
-  ordersButtonText: {
-    fontSize: 20,
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   logoutButton: {
     backgroundColor: '#EF4444',

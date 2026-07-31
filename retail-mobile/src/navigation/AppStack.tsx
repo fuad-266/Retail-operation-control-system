@@ -9,7 +9,7 @@ import HomeScreen from '../screens/HomeScreen'
 import ProductDetailScreen from '../screens/ProductDetailScreen'
 import CartScreen from '../screens/CartScreen'
 import CheckoutScreen from '../screens/CheckoutScreen'
-import PaymentSubmissionScreen from '../screens/PaymentSubmissionScreen'
+import PaymentUploadScreen from '../screens/PaymentUploadScreen'
 import MyOrdersScreen from '../screens/MyOrdersScreen'
 import OrderDetailScreen from '../screens/OrderDetailScreen'
 
@@ -19,8 +19,8 @@ export type RootStackParamList = {
   ProductDetail: { productId: string }
   Cart: undefined
   Checkout: undefined
-  PaymentSubmission: { orderId: string }
-  MyOrders: undefined
+  PaymentUpload: { orderId: string }
+  Orders: undefined
   OrderDetail: { orderId: string }
 }
 
@@ -43,8 +43,8 @@ export function AppStack() {
           <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
           <Stack.Screen name="Cart" component={CartScreen} />
           <Stack.Screen name="Checkout" component={CheckoutScreen} />
-          <Stack.Screen name="PaymentSubmission" component={PaymentSubmissionScreen} />
-          <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
+          <Stack.Screen name="PaymentUpload" component={PaymentUploadScreen} />
+          <Stack.Screen name="Orders" component={MyOrdersScreen} />
           <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
         </>
       ) : (

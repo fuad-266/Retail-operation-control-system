@@ -40,7 +40,7 @@ export interface SubmitPaymentRequest {
 }
 
 export const ordersService = {
-  createOnlineOrder: (data: CreateOnlineOrderRequest) =>
+  createOrder: (data: CreateOnlineOrderRequest) =>
     api.post<OnlineOrderDto>('/mobile/orders', data).then((r) => r.data),
 
   getMyOrders: () =>
@@ -49,10 +49,17 @@ export const ordersService = {
   getOrder: (id: string) =>
     api.get<OnlineOrderDto>(`/mobile/orders/${id}`).then((r) => r.data),
 
-  submitPaymentScreenshot: (orderId: string, formData: FormData) =>
-    api.post(`/mobile/orders/${orderId}/submit-payment`, formData, {
+  submitPayment: (orderId: string, screenshot: any, paymentReference?: string) => {
+    const formData = new FormData()
+    formData.append('screenshot', screenshot)
+    if (paymentReference) {
+      formData.append('paymentReference', paymentReference)
+    }
+
+    return api.post<OnlineOrderDto>(`/mobile/orders/${orderId}/submit-payment`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-    }).then((r) => r.data),
+    }).then((r) => r.data)
+  },
 }

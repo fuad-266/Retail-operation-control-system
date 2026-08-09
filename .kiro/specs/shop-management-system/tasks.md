@@ -36,6 +36,7 @@
 - [ ] 4. Implement Product CRUD API
   - Implement `ProductService` with methods: createProduct (OWNER), updateProduct (OWNER), deactivateProduct (OWNER — soft delete, return 404 if not found, 409 if already inactive), listActiveProducts, listLowStockProducts
   - Compute `price_etb = price / activeRate` rounded to 2 dp on every product query; include `current_exchange_rate` in every response
+  - **CURRENCY BUSINESS RULE**: All prices are stored in KES on the backend, but the customer can choose to view everything in KES or ETB. The backend always returns both price_kes and price_etb for every product — this app must never calculate currency conversion itself, only display whichever value matches the customer's preference.
   - Create two DTO projections: `ProductOwnerDto` (includes buyingPrice, profit, margin) and `ProductPublicDto` (excludes buyingPrice); select projection at service layer based on caller's role
   - Implement `ProductController` mapping GET /api/products, POST /api/products, PUT /api/products/{id}, DELETE /api/products/{id}, GET /api/products/low-stock
   - Validate: price > 0, stockQuantity >= 0, buyingPrice >= 0 if provided, minStockAlert >= 0; return 400 on violations
@@ -195,6 +196,7 @@
   - Build `HomeScreen`: search bar, horizontal category scroll, product grid (name, image, price in preferred currency, Add to Cart button)
   - Build `ProductDetailScreen`: product image, name, description, price in preferred currency, stock status, quantity selector, Add to Cart button
   - Currency toggle in header: switch between KES and ETB; updates all displayed prices using API-returned price_kes and price_etb values; persist via PUT /api/users/me/currency-preference
+  - **CURRENCY BUSINESS RULE**: All prices are stored in KES on the backend, but the customer can choose to view everything in KES or ETB. The backend always returns both price_kes and price_etb for every product — this app must never calculate currency conversion itself, only display whichever value matches the customer's preference.
   - **Requirements**: 3.9, 7.1, 11.9
 
 - [ ] 23. Build Cart, Checkout, and Payment screens

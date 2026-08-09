@@ -13,12 +13,14 @@ import { useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { RootStackParamList } from '../navigation/AppStack'
 import { useCart, CartItem } from '../context/CartContext'
+import { useCurrency } from '../context/CurrencyContext'
 
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>
 
 export default function CartScreen() {
   const navigation = useNavigation<CartScreenNavigationProp>()
   const { items, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart()
+  const { currency, formatPrice } = useCurrency()
 
   const handleRemoveItem = (productId: string, productName: string) => {
     Alert.alert(
@@ -63,7 +65,7 @@ export default function CartScreen() {
       <View style={styles.itemDetails}>
         <Text style={styles.itemName}>{item.name}</Text>
         <Text style={styles.itemCategory}>{item.category}</Text>
-        <Text style={styles.itemPrice}>KES {item.priceKes.toLocaleString()}</Text>
+        <Text style={styles.itemPrice}>{formatPrice(item.priceKes, item.priceEtb)}</Text>
         
         <View style={styles.quantityContainer}>
           <TouchableOpacity 
@@ -84,7 +86,7 @@ export default function CartScreen() {
       
       <View style={styles.itemActions}>
         <Text style={styles.itemTotal}>
-          KES {(item.priceKes * item.quantity).toLocaleString()}
+          {formatPrice(item.priceKes * item.quantity, item.priceEtb * item.quantity)}
         </Text>
         <TouchableOpacity 
           style={styles.removeButton}
@@ -144,7 +146,7 @@ export default function CartScreen() {
       <View style={styles.footer}>
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Total:</Text>
-          <Text style={styles.totalAmount}>KES {getTotalPrice().toLocaleString()}</Text>
+          <Text style={styles.totalAmount}>{formatPrice(getTotalPrice('KES'), getTotalPrice('ETB'))}</Text>
         </View>
         
         <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>

@@ -5,6 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './src/context/AuthContext'
 import { CartProvider } from './src/context/CartContext'
+import { CurrencyProvider } from './src/context/CurrencyContext'
 import { AppStack } from './src/navigation/AppStack'
 
 const queryClient = new QueryClient()
@@ -14,12 +15,14 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <CartProvider>
-          <NavigationContainer>
-            <AppStack />
-            <StatusBar style="auto" />
-          </NavigationContainer>
-        </CartProvider>
+        <CurrencyProvider>
+          <CartProvider>
+            <NavigationContainer>
+              <AppStack />
+              <StatusBar style="auto" />
+            </NavigationContainer>
+          </CartProvider>
+        </CurrencyProvider>
       </AuthProvider>
     </QueryClientProvider>
   )

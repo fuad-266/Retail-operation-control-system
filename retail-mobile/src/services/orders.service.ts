@@ -8,6 +8,7 @@ export interface OnlineOrderItemRequest {
 export interface CreateOnlineOrderRequest {
   items: OnlineOrderItemRequest[]
   deliveryAddress: string
+  paymentMethod: 'BANK_TRANSFER' | 'MOBILE_MONEY' | 'MESSENGER'
 }
 
 export interface OnlineOrderDto {

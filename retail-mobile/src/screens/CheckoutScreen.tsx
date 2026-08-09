@@ -15,29 +15,50 @@ import { StackNavigationProp } from '@react-navigation/stack'
 import { useMutation } from '@tanstack/react-query'
 import { RootStackParamList } from '../navigation/AppStack'
 import { useCart } from '../context/CartContext'
+import { useCurrency } from '../context/CurrencyContext'
 import { ordersService } from '../services/orders.service'
 
 type CheckoutScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Checkout'>
 
+type PaymentMethod = 'BANK_TRANSFER' | 'MOBILE_MONEY' | 'MESSENGER'
+
 export default function CheckoutScreen() {
   const navigation = useNavigation<CheckoutScreenNavigationProp>()
   const { items, getTotalPrice, clearCart } = useCart()
+  const { currency, formatPrice, getPrice } = useCurrency()
   const [deliveryAddress, setDeliveryAddress] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('MOBILE_MONEY')
 
   const createOrderMutation = useMutation({
     mutationFn: ordersService.createOrder,
     onSuccess: (order) => {
       clearCart()
-      Alert.alert(
-        'Order Created!',
-        'Your order has been placed successfully. Please proceed to payment.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('PaymentUpload', { orderId: order.id }),
-          },
-        ]
-      )
+      
+      // If payment method requires screenshot, navigate to payment upload
+      if (paymentMethod === 'BANK_TRANSFER' || paymentMethod === 'MOBILE_MONEY') {
+        Alert.alert(
+          'Order Created!',
+          'Your order has been placed successfully. Please proceed to payment.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('PaymentUpload', { orderId: order.id }),
+            },
+          ]
+        )
+      } else {
+        // Messenger payment - no screenshot required
+        Alert.alert(
+          'Order Created!',
+          'Your order has been placed successfully. Our team will contact you via messenger for payment details.',
+          [
+            {
+              text: 'View Orders',
+              onPress: () => navigation.navigate('Orders'),
+            },
+          ]
+        )
+      }
     },
     onError: (error: any) => {
       Alert.alert('Error', error.response?.data?.message || 'Failed to create order')
@@ -61,6 +82,7 @@ export default function CheckoutScreen() {
         quantity: item.quantity,
       })),
       deliveryAddress: deliveryAddress.trim(),
+      paymentMethod,
     }
 
     createOrderMutation.mutate(orderRequest)
@@ -86,13 +108,23 @@ export default function CheckoutScreen() {
                 {item.name} x {item.quantity}
               </Text>
               <Text style={styles.summaryItemPrice}>
-                KES {(item.priceKes * item.quantity).toLocaleString()}
+                {formatPrice(item.priceKes * item.quantity, item.priceEtb * item.quantity)}
               </Text>
             </View>
           ))}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total:</Text>
-            <Text style={styles.totalAmount}>KES {getTotalPrice().toLocaleString()}</Text>
+            <View>
+              <Text style={styles.totalAmount}>
+                {formatPrice(getTotalPrice('KES'), getTotalPrice('ETB'))}
+              </Text>
+              <Text style={styles.totalSecondary}>
+                {currency === 'KES' 
+                  ? `ETB ${getTotalPrice('ETB').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : `KES ${getTotalPrice('KES').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                }
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -110,17 +142,92 @@ export default function CheckoutScreen() {
           />
         </View>
 
+        {/* Payment Method Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Payment Method</Text>
+          <Text style={styles.helperText}>Select how you will pay for this order</Text>
+          
+          <TouchableOpacity
+            style={[
+              styles.paymentOption,
+              paymentMethod === 'BANK_TRANSFER' && styles.paymentOptionSelected,
+            ]}
+            onPress={() => setPaymentMethod('BANK_TRANSFER')}
+          >
+            <View style={styles.radioButton}>
+              {paymentMethod === 'BANK_TRANSFER' && <View style={styles.radioButtonInner} />}
+            </View>
+            <View style={styles.paymentOptionContent}>
+              <Text style={styles.paymentOptionTitle}>🏦 Bank Transfer</Text>
+              <Text style={styles.paymentOptionDescription}>
+                Transfer to our bank account and upload proof of payment
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.paymentOption,
+              paymentMethod === 'MOBILE_MONEY' && styles.paymentOptionSelected,
+            ]}
+            onPress={() => setPaymentMethod('MOBILE_MONEY')}
+          >
+            <View style={styles.radioButton}>
+              {paymentMethod === 'MOBILE_MONEY' && <View style={styles.radioButtonInner} />}
+            </View>
+            <View style={styles.paymentOptionContent}>
+              <Text style={styles.paymentOptionTitle}>📱 Mobile Money</Text>
+              <Text style={styles.paymentOptionDescription}>
+                Pay via M-PESA or similar and upload confirmation screenshot
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.paymentOption,
+              paymentMethod === 'MESSENGER' && styles.paymentOptionSelected,
+            ]}
+            onPress={() => setPaymentMethod('MESSENGER')}
+          >
+            <View style={styles.radioButton}>
+              {paymentMethod === 'MESSENGER' && <View style={styles.radioButtonInner} />}
+            </View>
+            <View style={styles.paymentOptionContent}>
+              <Text style={styles.paymentOptionTitle}>💬 Sent by Messenger</Text>
+              <Text style={styles.paymentOptionDescription}>
+                We'll contact you via messenger for payment arrangement
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Payment Instructions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment Instructions</Text>
+          <Text style={styles.sectionTitle}>What happens next?</Text>
           <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
-              After placing your order, you will need to make payment and upload a screenshot of
-              the payment confirmation.
-            </Text>
-            <Text style={styles.infoText}>
-              Payment details will be provided on the next screen.
-            </Text>
+            {paymentMethod === 'BANK_TRANSFER' || paymentMethod === 'MOBILE_MONEY' ? (
+              <>
+                <Text style={styles.infoText}>
+                  After placing your order, you will be directed to the payment instructions screen.
+                </Text>
+                <Text style={styles.infoText}>
+                  You'll need to make the payment and upload a screenshot of the confirmation.
+                </Text>
+                <Text style={styles.infoText}>
+                  Our cashier will verify your payment and process your order.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.infoText}>
+                  After placing your order, our team will contact you via messenger.
+                </Text>
+                <Text style={styles.infoText}>
+                  We'll arrange the payment details and delivery schedule with you directly.
+                </Text>
+              </>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -135,7 +242,7 @@ export default function CheckoutScreen() {
             <ActivityIndicator color="white" />
           ) : (
             <Text style={styles.placeOrderButtonText}>
-              Place Order - KES {getTotalPrice().toLocaleString()}
+              Place Order - {formatPrice(getTotalPrice('KES'), getTotalPrice('ETB'))}
             </Text>
           )}
         </TouchableOpacity>
@@ -208,6 +315,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#007AFF',
+    textAlign: 'right',
+  },
+  totalSecondary: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'right',
   },
   addressInput: {
     borderWidth: 1,
@@ -216,6 +330,55 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     minHeight: 100,
+  },
+  helperText: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 12,
+  },
+  paymentOption: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#fff',
+  },
+  paymentOptionSelected: {
+    borderColor: '#007AFF',
+    backgroundColor: '#f0f8ff',
+  },
+  radioButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  radioButtonInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#007AFF',
+  },
+  paymentOptionContent: {
+    flex: 1,
+  },
+  paymentOptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  paymentOptionDescription: {
+    fontSize: 14,
+    color: '#666',
   },
   infoBox: {
     backgroundColor: '#f0f8ff',

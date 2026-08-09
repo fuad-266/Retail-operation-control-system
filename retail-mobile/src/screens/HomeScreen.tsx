@@ -16,6 +16,7 @@ import { RootStackParamList } from '../navigation/AppStack'
 import { productsService, ProductDto } from '../services/products.service'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
+import { useCurrency } from '../context/CurrencyContext'
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>
 
@@ -23,6 +24,7 @@ export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>()
   const { logout } = useAuth()
   const { getTotalItems } = useCart()
+  const { currency, setCurrency, formatPrice } = useCurrency()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
 
@@ -58,7 +60,7 @@ export default function HomeScreen() {
           {item.name}
         </Text>
         <Text style={styles.productPrice}>
-          ETB {item.priceEtb.toFixed(2)}
+          {formatPrice(item.priceKes, item.priceEtb)}
         </Text>
         <Text style={styles.productStock}>
           {item.stockQuantity > 0 ? `${item.stockQuantity} in stock` : 'Out of stock'}
@@ -108,6 +110,25 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Shop</Text>
         <View style={styles.headerButtons}>
+          {/* Currency Toggle */}
+          <View style={styles.currencyToggle}>
+            <TouchableOpacity
+              style={[styles.currencyButton, currency === 'KES' && styles.currencyButtonActive]}
+              onPress={() => setCurrency('KES')}
+            >
+              <Text style={[styles.currencyButtonText, currency === 'KES' && styles.currencyButtonTextActive]}>
+                KES
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.currencyButton, currency === 'ETB' && styles.currencyButtonActive]}
+              onPress={() => setCurrency('ETB')}
+            >
+              <Text style={[styles.currencyButtonText, currency === 'ETB' && styles.currencyButtonTextActive]}>
+                ETB
+              </Text>
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => navigation.navigate('Cart')}
@@ -188,6 +209,29 @@ const styles = StyleSheet.create({
   headerButtons: {
     flexDirection: 'row',
     gap: 8,
+    alignItems: 'center',
+  },
+  currencyToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 2,
+  },
+  currencyButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  currencyButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  currencyButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  currencyButtonTextActive: {
+    color: 'white',
   },
   iconButton: {
     padding: 8,

@@ -12,7 +12,7 @@ interface CartContextType {
   removeFromCart: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
-  getTotalPrice: () => number
+  getTotalPrice: (currency: 'KES' | 'ETB') => number
   getTotalItems: () => number
 }
 
@@ -88,8 +88,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([])
   }
 
-  const getTotalPrice = () => {
-    return items.reduce((total, item) => total + (item.priceKes * item.quantity), 0)
+  const getTotalPrice = (currency: 'KES' | 'ETB' = 'KES') => {
+    return items.reduce((total, item) => {
+      const price = currency === 'KES' ? item.priceKes : item.priceEtb
+      return total + (price * item.quantity)
+    }, 0)
   }
 
   const getTotalItems = () => {

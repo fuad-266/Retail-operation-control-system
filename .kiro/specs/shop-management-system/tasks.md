@@ -36,7 +36,6 @@
 - [ ] 4. Implement Product CRUD API
   - Implement `ProductService` with methods: createProduct (OWNER), updateProduct (OWNER), deactivateProduct (OWNER — soft delete, return 404 if not found, 409 if already inactive), listActiveProducts, listLowStockProducts
   - Compute `price_etb = price / activeRate` rounded to 2 dp on every product query; include `current_exchange_rate` in every response
-  - **CURRENCY BUSINESS RULE**: All prices are stored in KES on the backend, but the customer can choose to view everything in KES or ETB. The backend always returns both price_kes and price_etb for every product — this app must never calculate currency conversion itself, only display whichever value matches the customer's preference.
   - Create two DTO projections: `ProductOwnerDto` (includes buyingPrice, profit, margin) and `ProductPublicDto` (excludes buyingPrice); select projection at service layer based on caller's role
   - Implement `ProductController` mapping GET /api/products, POST /api/products, PUT /api/products/{id}, DELETE /api/products/{id}, GET /api/products/low-stock
   - Validate: price > 0, stockQuantity >= 0, buyingPrice >= 0 if provided, minStockAlert >= 0; return 400 on violations
@@ -196,19 +195,26 @@
   - Build `HomeScreen`: search bar, horizontal category scroll, product grid (name, image, price in preferred currency, Add to Cart button)
   - Build `ProductDetailScreen`: product image, name, description, price in preferred currency, stock status, quantity selector, Add to Cart button
   - Currency toggle in header: switch between KES and ETB; updates all displayed prices using API-returned price_kes and price_etb values; persist via PUT /api/users/me/currency-preference
-  - **CURRENCY BUSINESS RULE**: All prices are stored in KES on the backend, but the customer can choose to view everything in KES or ETB. The backend always returns both price_kes and price_etb for every product — this app must never calculate currency conversion itself, only display whichever value matches the customer's preference.
   - **Requirements**: 3.9, 7.1, 11.9
 
 - [ ] 23. Build Cart, Checkout, and Payment screens
   - Build `CartScreen`: list of cart items with quantity controls and remove button; order total in preferred currency; delivery address text input; "Proceed to Checkout" button
-  - Build `CheckoutScreen`: order summary showing total in both currencies; "Place Order" button calls POST /api/mobile/orders; on success show payment instructions from response
-  - Build `PaymentSubmissionScreen`: display payment instructions (bank account / mobile money); "Upload Payment Screenshot" button opens image picker (camera or gallery); preview selected image; optional payment reference field; "Submit Payment" button uploads via POST /api/mobile/orders/{id}/submit-payment; show success screen with "Awaiting cashier verification" message
+  - Build `CheckoutScreen`: 
+    - Order summary showing total in both currencies
+    - **Payment Method Selection**: Show three tappable options, only one selectable at a time: "Bank Transfer", "Mobile Money", "Sent by Messenger"
+    - **Behavior per method**:
+      - If "Bank Transfer" or "Mobile Money" is selected: On placing the order, fetch and display the shop's payment instructions (bank account number or mobile money number) from the order-creation API response. Route customer to PaymentSubmissionScreen — screenshot upload is REQUIRED.
+      - If "Sent by Messenger" is selected: Order is placed without requiring screenshot upload. Customer proceeds to order confirmation.
+    - "Place Order" button calls POST /api/mobile/orders with selected payment method
+  - **CURRENCY BUSINESS RULE**: All prices are stored in KES on the backend, but the customer can choose to view everything in KES or ETB. The backend always returns both price_kes and price_etb for every product — this app must never calculate currency conversion itself, only display whichever value matches the customer's preference.
+  - Build `PaymentSubmissionScreen`: display payment instructions (bank account / mobile money number); "Upload Payment Screenshot" button opens image picker (camera or gallery); preview selected image; optional payment reference field; "Submit Payment" button uploads via POST /api/mobile/orders/{id}/submit-payment; show success screen with "Awaiting cashier verification" message
   - Show appropriate errors for invalid file type or size
   - **Requirements**: 8.1–8.6, 7.1, 7.4, 12.5
 
 - [ ] 24. Build My Orders and Order Detail screens
   - Build `MyOrdersScreen`: list of customer's own orders with status badge; tap to navigate to detail
   - Build `OrderDetailScreen`: items ordered, total in preferred currency, payment method, current status with visual status tracker (PENDING_PAYMENT → SCREENSHOT_SUBMITTED → PAID → PROCESSING → READY → DELIVERED); receipt number if PAID; rejection reason and "Re-submit Screenshot" button if PAYMENT_REJECTED
+  - **CURRENCY BUSINESS RULE**: Display order totals using the preferred currency (KES or ETB). Use the price_kes and price_etb values returned by the backend — never calculate currency conversion in the app.
   - **Requirements**: 7.2, 7.3, 10.1, 9.8, 9.9
 
 ---

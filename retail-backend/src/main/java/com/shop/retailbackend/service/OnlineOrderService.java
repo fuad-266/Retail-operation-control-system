@@ -55,10 +55,16 @@ public class OnlineOrderService {
     public OnlineOrderDto createOrder(CreateOnlineOrderRequest request, UUID customerId) {
         User customer = getUserOrThrow(customerId);
 
+        // Determine initial status: MESSENGER orders skip payment screenshot
+        boolean isMessenger = "MESSENGER".equalsIgnoreCase(request.getPaymentMethod());
+        OnlineOrderStatus initialStatus = isMessenger
+                ? OnlineOrderStatus.MESSENGER_PENDING
+                : OnlineOrderStatus.PENDING_PAYMENT;
+
         BigDecimal total = BigDecimal.ZERO;
         OnlineOrder order = OnlineOrder.builder()
                 .customer(customer)
-                .status(OnlineOrderStatus.PENDING_PAYMENT)
+                .status(initialStatus)
                 .deliveryAddress(request.getDeliveryAddress())
                 .totalAmount(BigDecimal.ZERO)
                 .build();
@@ -79,7 +85,8 @@ public class OnlineOrderService {
         order.setTotalAmount(total);
         onlineOrderRepository.save(order);
 
-        String instructions = buildPaymentInstructions();
+        // Only provide payment instructions for non-messenger orders
+        String instructions = isMessenger ? null : buildPaymentInstructions();
         return toDto(order, instructions);
     }
 
@@ -88,7 +95,7 @@ public class OnlineOrderService {
     @PreAuthorize("hasRole('CUSTOMER')")
     @Transactional
     public OnlineOrderDto submitPaymentScreenshot(UUID orderId, UUID customerId,
-                                                   MultipartFile screenshot, String paymentReference) {
+            MultipartFile screenshot, String paymentReference) {
         OnlineOrder order = getOrderOrThrow(orderId);
         ensureCustomerOwns(order, customerId);
 
@@ -113,7 +120,7 @@ public class OnlineOrderService {
         order.setPaymentScreenshotUrl(filename);
         order.setPaymentReference(paymentReference);
         order.setStatus(OnlineOrderStatus.SCREENSHOT_SUBMITTED);
-        order.setRejectionReason(null);  // clear previous rejection
+        order.setRejectionReason(null); // clear previous rejection
         onlineOrderRepository.save(order);
 
         return toDto(order, null);
@@ -158,7 +165,8 @@ public class OnlineOrderService {
         return toDto(order, null);
     }
 
-    // ── Cashier/Owner: pending verification queue ─────────────────────────
+    // ── Cashier/Owner: pending verification queue (screenshot submitted)
+    // ───────────────────
 
     @PreAuthorize("hasAnyRole('CASHIER','OWNER')")
     public List<OnlineOrderDto> getPendingVerification() {
@@ -167,7 +175,18 @@ public class OnlineOrderService {
                 .collect(Collectors.toList());
     }
 
-    // ── Cashier/Owner: confirm online payment ─────────────────────────────
+    // ── Cashier/Owner: messenger orders awaiting cash delivery
+    // ───────────────────────
+
+    @PreAuthorize("hasAnyRole('CASHIER','OWNER')")
+    public List<OnlineOrderDto> getMessengerPendingOrders() {
+        return onlineOrderRepository.findAllByStatus(OnlineOrderStatus.MESSENGER_PENDING).stream()
+                .map(o -> toDto(o, null))
+                .collect(Collectors.toList());
+    }
+
+    // ── Cashier/Owner: confirm online payment (screenshot route)
+    // ──────────────────
 
     @PreAuthorize("hasAnyRole('CASHIER','OWNER')")
     @Transactional
@@ -179,7 +198,30 @@ public class OnlineOrderService {
                     "Order is not in SCREENSHOT_SUBMITTED status");
         }
 
-        if (receiptRepository.existsByOnlineOrderId(orderId)) {
+        return doConfirmAndGenerateReceipt(order, request, confirmerId);
+    }
+
+    // ── Cashier/Owner: confirm messenger cash payment ───────────────────────────
+
+    @PreAuthorize("hasAnyRole('CASHIER','OWNER')")
+    @Transactional
+    public ReceiptDto confirmMessengerPayment(UUID orderId, ConfirmPaymentRequest request, UUID confirmerId) {
+        OnlineOrder order = getOrderOrThrow(orderId);
+
+        if (order.getStatus() != OnlineOrderStatus.MESSENGER_PENDING) {
+            throw new AppException(HttpStatus.CONFLICT,
+                    "Order is not in MESSENGER_PENDING status");
+        }
+
+        return doConfirmAndGenerateReceipt(order, request, confirmerId);
+    }
+
+    /**
+     * Shared logic: deduct stock, set PAID, create receipt.
+     * Used by both confirmOnlinePayment and confirmMessengerPayment.
+     */
+    private ReceiptDto doConfirmAndGenerateReceipt(OnlineOrder order, ConfirmPaymentRequest request, UUID confirmerId) {
+        if (receiptRepository.existsByOnlineOrderId(order.getId())) {
             throw new AppException(HttpStatus.CONFLICT, "Order is already paid");
         }
 
@@ -259,6 +301,8 @@ public class OnlineOrderService {
         boolean valid = switch (current) {
             case PENDING_PAYMENT -> target == OnlineOrderStatus.SCREENSHOT_SUBMITTED
                     || target == OnlineOrderStatus.CANCELLED;
+            case MESSENGER_PENDING -> target == OnlineOrderStatus.PAID
+                    || target == OnlineOrderStatus.CANCELLED;
             case SCREENSHOT_SUBMITTED -> target == OnlineOrderStatus.PAID
                     || target == OnlineOrderStatus.PAYMENT_REJECTED
                     || target == OnlineOrderStatus.CANCELLED;
@@ -270,7 +314,7 @@ public class OnlineOrderService {
                     || target == OnlineOrderStatus.CANCELLED;
             case READY -> target == OnlineOrderStatus.DELIVERED
                     || target == OnlineOrderStatus.CANCELLED;
-            case DELIVERED, CANCELLED -> false;  // terminal states
+            case DELIVERED, CANCELLED -> false; // terminal states
         };
         if (!valid) {
             throw new AppException(HttpStatus.CONFLICT,

@@ -16,7 +16,8 @@ import {
     Printer,
     Receipt,
     ZoomIn,
-    ExternalLink
+    ExternalLink,
+    Bike
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -37,6 +38,10 @@ export default function CashierDashboard() {
     // ─── Online Orders ──────────────────────
     const [onlineOrders, setOnlineOrders] = useState([]);
     const [onlineLoading, setOnlineLoading] = useState(true);
+
+    // ─── Messenger Orders ───────────────────
+    const [messengerOrders, setMessengerOrders] = useState([]);
+    const [messengerLoading, setMessengerLoading] = useState(true);
 
     // ─── Payment Modal ──────────────────────
     const [payModal, setPayModal] = useState(null);
@@ -68,6 +73,7 @@ export default function CashierDashboard() {
         setPendingLoading(true);
         setReservedLoading(true);
         setOnlineLoading(true);
+        setMessengerLoading(true);
         setCompletedLoading(true);
         setFetchError('');
 
@@ -85,6 +91,11 @@ export default function CashierDashboard() {
             .then(res => setOnlineOrders(res.data))
             .catch((err) => setFetchError(err.response?.data?.message || 'Failed to load online orders.'))
             .finally(() => setOnlineLoading(false));
+
+        orderService.messengerPending()
+            .then(res => setMessengerOrders(res.data))
+            .catch((err) => setFetchError(err.response?.data?.message || 'Failed to load messenger orders.'))
+            .finally(() => setMessengerLoading(false));
 
         receiptService.today()
             .then(res => setCompletedOrders(res.data))
@@ -128,9 +139,12 @@ export default function CashierDashboard() {
         try {
             const orderId = payModal.id;
             const isOnline = payModal.isOnline;
+            const isMessenger = payModal.isMessenger;
             let res;
 
-            if (isOnline) {
+            if (isMessenger) {
+                res = await paymentService.confirmMessenger(orderId, payForm);
+            } else if (isOnline) {
                 res = await paymentService.confirmOnline(orderId, payForm);
             } else {
                 res = await paymentService.confirm(orderId, payForm);
@@ -215,6 +229,10 @@ export default function CashierDashboard() {
                 <button className={`tab-btn ${tab === 'online' ? 'active' : ''}`} onClick={() => setTab('online')}>
                     <Globe size={16} /> Online Payments
                     {onlineOrders.length > 0 && <span className="tab-badge">{onlineOrders.length}</span>}
+                </button>
+                <button className={`tab-btn ${tab === 'messenger' ? 'active' : ''}`} onClick={() => setTab('messenger')}>
+                    <Bike size={16} /> Messenger
+                    {messengerOrders.length > 0 && <span className="tab-badge">{messengerOrders.length}</span>}
                 </button>
                 <button className={`tab-btn ${tab === 'completed' ? 'active' : ''}`} onClick={() => setTab('completed')}>
                     <Receipt size={16} /> Completed
@@ -418,6 +436,61 @@ export default function CashierDashboard() {
                                                     }}
                                                 >
                                                     <XCircle size={14} /> Reject
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Messenger Orders Tab */}
+            {tab === 'messenger' && (
+                <div className="tab-content">
+                    {messengerLoading ? (
+                        <p className="text-muted">Loading…</p>
+                    ) : messengerOrders.length === 0 ? (
+                        <div className="empty-state">
+                            <Bike size={48} />
+                            <p>No messenger orders awaiting cash</p>
+                        </div>
+                    ) : (
+                        <div className="table-wrapper">
+                            <table className="data-table" id="messenger-orders-table">
+                                <thead>
+                                    <tr>
+                                        <th>Customer</th>
+                                        <th>Items</th>
+                                        <th>Total</th>
+                                        <th>Address</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {messengerOrders.map(order => (
+                                        <tr key={order.id}>
+                                            <td>{order.customerName || '—'}</td>
+                                            <td className="td-items">
+                                                {order.items?.map((item, i) => (
+                                                    <span key={i} className="order-item-tag">{item.productName} × {item.quantity}</span>
+                                                ))}
+                                            </td>
+                                            <td>KES {Number(order.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                            <td>{order.deliveryAddress || '—'}</td>
+                                            <td>{new Date(order.createdAt).toLocaleString()}</td>
+                                            <td className="td-actions">
+                                                <button
+                                                    className="btn btn-sm btn-primary"
+                                                    onClick={() => {
+                                                        setPayModal({ ...order, isMessenger: true });
+                                                        setPayMsg({ type: '', text: '' });
+                                                    }}
+                                                >
+                                                    <CheckCircle size={14} /> Confirm Cash
                                                 </button>
                                             </td>
                                         </tr>

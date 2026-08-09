@@ -2,6 +2,8 @@ package com.shop.retailbackend.controller;
 
 import com.shop.retailbackend.dto.onlineorder.CreateOnlineOrderRequest;
 import com.shop.retailbackend.dto.onlineorder.OnlineOrderDto;
+import com.shop.retailbackend.dto.payment.ConfirmPaymentRequest;
+import com.shop.retailbackend.dto.payment.ReceiptDto;
 import com.shop.retailbackend.dto.product.ProductPublicDto;
 import com.shop.retailbackend.entity.OnlineOrderStatus;
 import com.shop.retailbackend.service.OnlineOrderService;
@@ -36,7 +38,7 @@ public class MobileController {
     // Place an online order
     @PostMapping("/orders")
     public ResponseEntity<OnlineOrderDto> createOrder(@Valid @RequestBody CreateOnlineOrderRequest request,
-                                                       Authentication auth) {
+            Authentication auth) {
         UUID customerId = (UUID) auth.getPrincipal();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(onlineOrderService.createOrder(request, customerId));
@@ -45,9 +47,9 @@ public class MobileController {
     // Upload payment screenshot
     @PostMapping(value = "/orders/{id}/submit-payment", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<OnlineOrderDto> submitPayment(@PathVariable UUID id,
-                                                         @RequestPart("screenshot") MultipartFile screenshot,
-                                                         @RequestParam(required = false) String paymentReference,
-                                                         Authentication auth) {
+            @RequestPart("screenshot") MultipartFile screenshot,
+            @RequestParam(required = false) String paymentReference,
+            Authentication auth) {
         UUID customerId = (UUID) auth.getPrincipal();
         return ResponseEntity.ok(
                 onlineOrderService.submitPaymentScreenshot(id, customerId, screenshot, paymentReference));
@@ -60,6 +62,22 @@ public class MobileController {
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
                 .body(resource);
+    }
+
+    // CASHIER/OWNER: list all MESSENGER_PENDING orders (cash via messenger)
+    @GetMapping("/orders/messenger-pending")
+    public ResponseEntity<List<OnlineOrderDto>> getMessengerPending() {
+        return ResponseEntity.ok(onlineOrderService.getMessengerPendingOrders());
+    }
+
+    // CASHIER/OWNER: confirm cash received from messenger, generate receipt
+    @PostMapping("/orders/{id}/confirm-messenger")
+    public ResponseEntity<ReceiptDto> confirmMessengerPayment(
+            @PathVariable UUID id,
+            @Valid @RequestBody ConfirmPaymentRequest request,
+            Authentication auth) {
+        UUID confirmerId = (UUID) auth.getPrincipal();
+        return ResponseEntity.ok(onlineOrderService.confirmMessengerPayment(id, request, confirmerId));
     }
 
     // Customer: my orders

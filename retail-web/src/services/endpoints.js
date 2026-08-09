@@ -25,6 +25,7 @@ export const orderService = {
     pendingOrders: () => api.get('/api/orders/pending'),
     reservedOrders: () => api.get('/api/orders/reserved'),
     onlinePendingVerification: () => api.get('/api/orders/online/pending-verification'),
+    messengerPending: () => api.get('/api/mobile/orders/messenger-pending'),
 };
 
 // ─── Payments ────────────────────────────
@@ -32,7 +33,9 @@ export const paymentService = {
     confirm: (orderId, data) => api.post(`/api/payments/confirm/${orderId}`, data),
     confirmOnline: (orderId, data) => api.post(`/api/payments/confirm-online/${orderId}`, data),
     rejectOnline: (orderId, reason) => api.post(`/api/payments/reject-online/${orderId}`, { reason }),
+    confirmMessenger: (orderId, data) => api.post(`/api/mobile/orders/${orderId}/confirm-messenger`, data),
 };
+
 
 // ─── Receipts ────────────────────────────
 export const receiptService = {

@@ -17,4 +17,8 @@ public class CreateOnlineOrderRequest {
 
     @NotBlank(message = "Delivery address is required")
     private String deliveryAddress;
+
+    // Optional: "MESSENGER" causes MESSENGER_PENDING status (no screenshot needed).
+    // Omitting or any other value → PENDING_PAYMENT (screenshot required).
+    private String paymentMethod;
 }

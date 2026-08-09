@@ -7,23 +7,26 @@ import { AuthProvider } from './src/context/AuthContext'
 import { CartProvider } from './src/context/CartContext'
 import { CurrencyProvider } from './src/context/CurrencyContext'
 import { AppStack } from './src/navigation/AppStack'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 const queryClient = new QueryClient()
 const Stack = createStackNavigator()
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <CurrencyProvider>
-          <CartProvider>
-            <NavigationContainer>
-              <AppStack />
-              <StatusBar style="auto" />
-            </NavigationContainer>
-          </CartProvider>
-        </CurrencyProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <CurrencyProvider>
+            <CartProvider>
+              <NavigationContainer>
+                <AppStack />
+                <StatusBar style="auto" />
+              </NavigationContainer>
+            </CartProvider>
+          </CurrencyProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   )
 }

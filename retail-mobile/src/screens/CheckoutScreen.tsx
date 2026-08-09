@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { useMutation } from '@tanstack/react-query'
@@ -24,6 +25,7 @@ type PaymentMethod = 'BANK_TRANSFER' | 'MOBILE_MONEY' | 'MESSENGER'
 
 export default function CheckoutScreen() {
   const navigation = useNavigation<CheckoutScreenNavigationProp>()
+  const insets = useSafeAreaInsets()
   const { items, getTotalPrice, clearCart } = useCart()
   const { currency, formatPrice, getPrice } = useCurrency()
   const [deliveryAddress, setDeliveryAddress] = useState('')
@@ -33,7 +35,7 @@ export default function CheckoutScreen() {
     mutationFn: ordersService.createOrder,
     onSuccess: (order) => {
       clearCart()
-      
+
       // If payment method requires screenshot, navigate to payment upload
       if (paymentMethod === 'BANK_TRANSFER' || paymentMethod === 'MOBILE_MONEY') {
         Alert.alert(
@@ -119,7 +121,7 @@ export default function CheckoutScreen() {
                 {formatPrice(getTotalPrice('KES'), getTotalPrice('ETB'))}
               </Text>
               <Text style={styles.totalSecondary}>
-                {currency === 'KES' 
+                {currency === 'KES'
                   ? `ETB ${getTotalPrice('ETB').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                   : `KES ${getTotalPrice('KES').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                 }
@@ -146,7 +148,7 @@ export default function CheckoutScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Payment Method</Text>
           <Text style={styles.helperText}>Select how you will pay for this order</Text>
-          
+
           <TouchableOpacity
             style={[
               styles.paymentOption,
@@ -232,7 +234,8 @@ export default function CheckoutScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      {/* Footer */}
+      <View style={[styles.footer, { paddingBottom: Math.max(16, insets.bottom + 16) }]}>
         <TouchableOpacity
           style={[styles.placeOrderButton, createOrderMutation.isPending && styles.buttonDisabled]}
           onPress={handlePlaceOrder}

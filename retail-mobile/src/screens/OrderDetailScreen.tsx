@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
@@ -23,35 +24,25 @@ type OrderDetailScreenRouteProp = {
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'PENDING':
-      return '#FFA500'
-    case 'PAYMENT_SUBMITTED':
-      return '#007AFF'
-    case 'APPROVED':
-      return '#34C759'
-    case 'REJECTED':
-      return '#FF3B30'
-    case 'DELIVERED':
-      return '#34C759'
-    default:
-      return '#666'
+    case 'PENDING': return '#FFA726'
+    case 'PAYMENT_SUBMITTED': return '#42A5F5'
+    case 'APPROVED': return '#66BB6A'
+    case 'REJECTED': return '#EF5350'
+    case 'DELIVERED': return '#2E7D32'
+    case 'MESSENGER_PENDING': return '#AB47BC'
+    default: return '#999'
   }
 }
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'PENDING':
-      return 'Pending Payment'
-    case 'PAYMENT_SUBMITTED':
-      return 'Payment Submitted'
-    case 'APPROVED':
-      return 'Approved'
-    case 'REJECTED':
-      return 'Rejected'
-    case 'DELIVERED':
-      return 'Delivered'
-    default:
-      return status
+    case 'PENDING': return 'Pending Payment'
+    case 'PAYMENT_SUBMITTED': return 'Payment Submitted'
+    case 'APPROVED': return 'Approved'
+    case 'REJECTED': return 'Rejected'
+    case 'DELIVERED': return 'Delivered'
+    case 'MESSENGER_PENDING': return 'Messenger Pending'
+    default: return status
   }
 }
 
@@ -68,7 +59,10 @@ export default function OrderDetailScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" />
+        <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#E8601C" />
+        </View>
       </SafeAreaView>
     )
   }
@@ -76,109 +70,131 @@ export default function OrderDetailScreen() {
   if (!order) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text>Order not found</Text>
+        <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
+        <View style={styles.loadingContainer}>
+          <Text style={{ fontSize: 48, marginBottom: 12 }}>😔</Text>
+          <Text style={styles.loadingText}>Order not found</Text>
+        </View>
       </SafeAreaView>
     )
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
+
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Text style={styles.backBtnText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order Details</Text>
-        <View style={{ width: 50 }} />
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView}>
-        {/* Order Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Information</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Order ID:</Text>
-            <Text style={styles.value}>{order.id.slice(0, 8)}</Text>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* Status Header Card */}
+        <View style={styles.statusCard}>
+          <View style={[styles.statusIconCircle, { backgroundColor: getStatusColor(order.status) + '20' }]}>
+            <Text style={styles.statusIconText}>📋</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Date:</Text>
-            <Text style={styles.value}>
-              {new Date(order.createdAt).toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+          <Text style={styles.statusOrderId}>Order #{order.id.slice(0, 8)}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '18' }]}>
+            <View style={[styles.statusDot, { backgroundColor: getStatusColor(order.status) }]} />
+            <Text style={[styles.statusBadgeText, { color: getStatusColor(order.status) }]}>
+              {getStatusText(order.status)}
             </Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Status:</Text>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
-              <Text style={styles.statusText}>{getStatusText(order.status)}</Text>
-            </View>
-          </View>
+          <Text style={styles.statusDate}>
+            {new Date(order.createdAt).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </Text>
         </View>
 
-        {/* Order Items */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Items</Text>
+        {/* Order Items Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardIcon}>🛒</Text>
+            <Text style={styles.cardTitle}>Order Items</Text>
+          </View>
           {order.items.map((item) => (
             <View key={item.id} style={styles.itemRow}>
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.productName}</Text>
-                <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
+              <View style={styles.itemLeft}>
+                <View style={styles.itemIconCircle}>
+                  <Text style={styles.itemIconText}>📦</Text>
+                </View>
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemName}>{item.productName}</Text>
+                  <Text style={styles.itemQty}>Qty: {item.quantity} × KES {item.unitPrice.toLocaleString()}</Text>
+                </View>
               </View>
-              <View style={styles.itemPricing}>
-                <Text style={styles.itemPrice}>
-                  KES {item.unitPrice.toLocaleString()} each
-                </Text>
-                <Text style={styles.itemTotal}>
-                  KES {(item.unitPrice * item.quantity).toLocaleString()}
-                </Text>
-              </View>
+              <Text style={styles.itemTotal}>
+                KES {(item.unitPrice * item.quantity).toLocaleString()}
+              </Text>
             </View>
           ))}
-          
+
+          <View style={styles.totalDivider} />
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total:</Text>
+            <Text style={styles.totalLabel}>Total Amount</Text>
             <Text style={styles.totalAmount}>KES {order.totalAmount.toLocaleString()}</Text>
           </View>
         </View>
 
-        {/* Delivery Address */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Delivery Address</Text>
-          <Text style={styles.addressText}>{order.deliveryAddress}</Text>
+        {/* Delivery Address Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardIcon}>📍</Text>
+            <Text style={styles.cardTitle}>Delivery Address</Text>
+          </View>
+          <View style={styles.addressBox}>
+            <Text style={styles.addressText}>{order.deliveryAddress}</Text>
+          </View>
         </View>
 
-        {/* Payment Info */}
+        {/* Payment Reference */}
         {order.paymentReference && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Payment Reference</Text>
-            <Text style={styles.value}>{order.paymentReference}</Text>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardIcon}>🧾</Text>
+              <Text style={styles.cardTitle}>Payment Reference</Text>
+            </View>
+            <View style={styles.refBox}>
+              <Text style={styles.refText}>{order.paymentReference}</Text>
+            </View>
           </View>
         )}
 
         {/* Rejection Reason */}
         {order.status === 'REJECTED' && order.rejectionReason && (
-          <View style={styles.section}>
-            <View style={styles.rejectionBox}>
-              <Text style={styles.rejectionTitle}>Order Rejected</Text>
-              <Text style={styles.rejectionReason}>{order.rejectionReason}</Text>
+          <View style={styles.rejectionCard}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardIcon}>⚠️</Text>
+              <Text style={[styles.cardTitle, { color: '#EF5350' }]}>Order Rejected</Text>
             </View>
+            <Text style={styles.rejectionText}>{order.rejectionReason}</Text>
           </View>
         )}
 
-        {/* Action Buttons */}
+        {/* Action Button */}
         {order.status === 'PENDING' && (
-          <View style={styles.section}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('PaymentUpload', { orderId: order.id })}
-            >
-              <Text style={styles.actionButtonText}>Upload Payment Screenshot</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('PaymentUpload', { orderId: order.id })}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.actionIcon}>📤</Text>
+            <Text style={styles.actionButtonText}>Upload Payment Screenshot</Text>
+          </TouchableOpacity>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -188,138 +204,257 @@ export default function OrderDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F5F5',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#999',
+    fontWeight: '500',
+  },
+
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: '#FAFAFA',
   },
-  backButton: {
-    fontSize: 16,
-    color: '#007AFF',
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backBtnText: {
+    fontSize: 18,
+    color: '#1A1A2E',
+    fontWeight: '600',
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#1A1A2E',
   },
   scrollView: {
     flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
-  section: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+
+  // Status Card
+  statusCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 24,
+    marginBottom: 14,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  statusIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 12,
   },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+  statusIconText: {
+    fontSize: 26,
   },
-  label: {
-    fontSize: 16,
-    color: '#666',
-  },
-  value: {
-    fontSize: 16,
-    fontWeight: '600',
+  statusOrderId: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A1A2E',
+    marginBottom: 10,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+    marginBottom: 8,
   },
-  statusText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
   },
+  statusBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  statusDate: {
+    fontSize: 13,
+    color: '#999',
+  },
+
+  // Cards
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    gap: 8,
+  },
+  cardIcon: {
+    fontSize: 18,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A2E',
+  },
+
+  // Items
   itemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    alignItems: 'center',
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F5F5F5',
+  },
+  itemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 10,
+  },
+  itemIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#FFF0EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  itemIconText: {
+    fontSize: 16,
   },
   itemInfo: {
     flex: 1,
   },
   itemName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 4,
+    color: '#1A1A2E',
+    marginBottom: 2,
   },
-  itemQuantity: {
-    fontSize: 14,
-    color: '#666',
-  },
-  itemPricing: {
-    alignItems: 'flex-end',
-  },
-  itemPrice: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+  itemQty: {
+    fontSize: 12,
+    color: '#999',
   },
   itemTotal: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#E8601C',
+  },
+  totalDivider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginVertical: 14,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 2,
-    borderTopColor: '#e0e0e0',
   },
   totalLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A2E',
   },
   totalAmount: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    fontWeight: '800',
+    color: '#E8601C',
+  },
+
+  // Address
+  addressBox: {
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    padding: 14,
   },
   addressText: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  rejectionBox: {
-    backgroundColor: '#ffe6e6',
-    padding: 12,
-    borderRadius: 8,
-  },
-  rejectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FF3B30',
-    marginBottom: 8,
-  },
-  rejectionReason: {
     fontSize: 14,
-    color: '#333',
+    lineHeight: 22,
+    color: '#444',
   },
+
+  // Reference
+  refBox: {
+    backgroundColor: '#FFF0EB',
+    borderRadius: 12,
+    padding: 14,
+  },
+  refText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#E8601C',
+  },
+
+  // Rejection
+  rejectionCard: {
+    backgroundColor: '#FFF8F8',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+  },
+  rejectionText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+
+  // Action
   actionButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: '#E8601C',
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+    shadowColor: '#E8601C',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  actionIcon: {
+    fontSize: 16,
   },
   actionButtonText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 })

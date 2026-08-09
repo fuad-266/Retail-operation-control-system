@@ -18,16 +18,22 @@ type MyOrdersScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Ord
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'PENDING':
+    case 'PENDING_PAYMENT':
       return '#FFA500'
-    case 'PAYMENT_SUBMITTED':
+    case 'SCREENSHOT_SUBMITTED':
       return '#007AFF'
-    case 'APPROVED':
-      return '#34C759'
-    case 'REJECTED':
+    case 'PAYMENT_REJECTED':
       return '#FF3B30'
-    case 'DELIVERED':
+    case 'PAID':
       return '#34C759'
+    case 'PROCESSING':
+      return '#007AFF'
+    case 'READY':
+      return '#34C759'
+    case 'DELIVERED':
+      return '#00C853'
+    case 'CANCELLED':
+      return '#999'
     default:
       return '#666'
   }
@@ -35,16 +41,22 @@ const getStatusColor = (status: string) => {
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'PENDING':
+    case 'PENDING_PAYMENT':
       return 'Pending Payment'
-    case 'PAYMENT_SUBMITTED':
+    case 'SCREENSHOT_SUBMITTED':
       return 'Payment Submitted'
-    case 'APPROVED':
-      return 'Approved'
-    case 'REJECTED':
-      return 'Rejected'
+    case 'PAYMENT_REJECTED':
+      return 'Payment Rejected'
+    case 'PAID':
+      return 'Paid'
+    case 'PROCESSING':
+      return 'Processing'
+    case 'READY':
+      return 'Ready for Pickup'
     case 'DELIVERED':
       return 'Delivered'
+    case 'CANCELLED':
+      return 'Cancelled'
     default:
       return status
   }
@@ -83,7 +95,7 @@ export default function MyOrdersScreen() {
 
       <Text style={styles.itemCount}>{item.items.length} item(s)</Text>
 
-      {item.status === 'PENDING' && (
+      {item.status === 'PENDING_PAYMENT' && (
         <TouchableOpacity
           style={styles.payButton}
           onPress={(e) => {
@@ -95,7 +107,7 @@ export default function MyOrdersScreen() {
         </TouchableOpacity>
       )}
 
-      {item.status === 'REJECTED' && item.rejectionReason && (
+      {item.status === 'PAYMENT_REJECTED' && item.rejectionReason && (
         <View style={styles.rejectionBox}>
           <Text style={styles.rejectionLabel}>Rejection Reason:</Text>
           <Text style={styles.rejectionText}>{item.rejectionReason}</Text>

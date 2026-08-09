@@ -31,6 +31,7 @@ public class PaymentService {
     private final ProductRepository productRepository;
     private final ShopSettingRepository shopSettingRepository;
     private final ExchangeRateService exchangeRateService;
+    private final UserRepository userRepository;
 
     private static final int MAX_RETRIES = 1;
 
@@ -170,10 +171,8 @@ public class PaymentService {
     }
 
     private User getUserRef(UUID userId) {
-        // Lightweight reference — avoids extra query when we only need the FK
-        User user = new User();
-        user.setId(userId);
-        return user;
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Confirmer not found"));
     }
 
     boolean showItemPrices() {

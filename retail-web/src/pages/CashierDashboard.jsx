@@ -14,8 +14,13 @@ import {
     ShoppingBag,
     Globe,
     Printer,
-    Receipt
+    Receipt,
+    ZoomIn,
+    ExternalLink
 } from 'lucide-react';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
 
 export default function CashierDashboard() {
     const { currency, exchangeRate } = useAuth();
@@ -51,31 +56,65 @@ export default function CashierDashboard() {
     const [completedOrders, setCompletedOrders] = useState([]);
     const [completedLoading, setCompletedLoading] = useState(true);
 
+    // ─── Fetch Error ─────────────────────────────────────────────
+    const [fetchError, setFetchError] = useState('');
+
+    // ─── Screenshot Modal ────────────────────────────────────────
+    const [screenshotModal, setScreenshotModal] = useState(null);
+    const [screenshotLoading, setScreenshotLoading] = useState(false);
+    const [screenshotUrl, setScreenshotUrl] = useState(null);
+
     const fetchAll = () => {
         setPendingLoading(true);
         setReservedLoading(true);
         setOnlineLoading(true);
         setCompletedLoading(true);
+        setFetchError('');
 
         orderService.pendingOrders()
             .then(res => setPendingOrders(res.data))
-            .catch(() => { })
+            .catch((err) => setFetchError(err.response?.data?.message || 'Failed to load pending orders.'))
             .finally(() => setPendingLoading(false));
 
         orderService.reservedOrders()
             .then(res => setReservedOrders(res.data))
-            .catch(() => { })
+            .catch((err) => setFetchError(err.response?.data?.message || 'Failed to load reserved orders.'))
             .finally(() => setReservedLoading(false));
 
         orderService.onlinePendingVerification()
             .then(res => setOnlineOrders(res.data))
-            .catch(() => { })
+            .catch((err) => setFetchError(err.response?.data?.message || 'Failed to load online orders.'))
             .finally(() => setOnlineLoading(false));
 
         receiptService.today()
             .then(res => setCompletedOrders(res.data))
-            .catch(() => { })
+            .catch((err) => setFetchError(err.response?.data?.message || 'Failed to load order history. Check backend connection.'))
             .finally(() => setCompletedLoading(false));
+    };
+
+    // ─── Open Screenshot Modal ───────────────────────────
+    const openScreenshot = (order) => {
+        setScreenshotModal(order);
+        setScreenshotUrl(null);
+        setScreenshotLoading(true);
+        // Build authenticated image URL using a fetch + blob approach
+        const token = localStorage.getItem('token');
+        fetch(`${API_BASE}/api/mobile/orders/${order.id}/screenshot`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(r => {
+                if (!r.ok) throw new Error('Failed to load screenshot');
+                return r.blob();
+            })
+            .then(blob => setScreenshotUrl(URL.createObjectURL(blob)))
+            .catch(() => setScreenshotUrl('error'))
+            .finally(() => setScreenshotLoading(false));
+    };
+
+    const closeScreenshot = () => {
+        if (screenshotUrl && screenshotUrl !== 'error') URL.revokeObjectURL(screenshotUrl);
+        setScreenshotModal(null);
+        setScreenshotUrl(null);
     };
 
     useEffect(() => { fetchAll(); }, []);
@@ -156,6 +195,12 @@ export default function CashierDashboard() {
                     <RefreshCw size={16} /> Refresh
                 </button>
             </div>
+
+            {fetchError && (
+                <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+                    ⚠️ {fetchError}
+                </div>
+            )}
 
             {/* Tabs */}
             <div className="tab-bar" id="cashier-tabs">
@@ -325,6 +370,7 @@ export default function CashierDashboard() {
                                         <th>Total</th>
                                         <th>Reference</th>
                                         <th>Date</th>
+                                        <th>Screenshot</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -337,9 +383,23 @@ export default function CashierDashboard() {
                                                     <span key={i} className="order-item-tag">{item.productName} × {item.quantity}</span>
                                                 ))}
                                             </td>
-                                            <td>{formatAmount(order.totalAmountKes, order.totalAmountEtb)}</td>
+                                            <td>KES {Number(order.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                             <td>{order.paymentReference || '—'}</td>
                                             <td>{new Date(order.createdAt).toLocaleString()}</td>
+                                            <td>
+                                                {order.paymentScreenshotUrl ? (
+                                                    <button
+                                                        className="btn btn-sm btn-outline"
+                                                        onClick={() => openScreenshot(order)}
+                                                        id={`view-screenshot-${order.id}`}
+                                                        title="View payment screenshot"
+                                                    >
+                                                        <ZoomIn size={14} /> View Proof
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-muted" style={{ fontSize: '0.8rem' }}>No screenshot</span>
+                                                )}
+                                            </td>
                                             <td className="td-actions">
                                                 <button
                                                     className="btn btn-sm btn-primary"
@@ -593,6 +653,113 @@ export default function CashierDashboard() {
                             <button className="btn btn-outline" onClick={() => setReceiptModal(null)}>Close</button>
                             <button className="btn btn-primary" onClick={handlePrintReceipt} id="print-receipt-btn">
                                 <Printer size={16} /> Print Receipt
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── Screenshot Viewer Modal ─── */}
+            {screenshotModal && (
+                <div className="modal-overlay" onClick={closeScreenshot}>
+                    <div
+                        className="modal screenshot-modal"
+                        onClick={(e) => e.stopPropagation()}
+                        id="screenshot-modal"
+                        style={{ maxWidth: '780px', width: '95vw' }}
+                    >
+                        <div className="modal-header">
+                            <div>
+                                <h2><Image size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />Payment Screenshot</h2>
+                                <p className="text-muted" style={{ fontSize: '0.82rem', marginTop: '2px' }}>
+                                    Customer: <strong>{screenshotModal.customerName}</strong>
+                                    {screenshotModal.paymentReference && (
+                                        <> &nbsp;·&nbsp; Ref: <strong>{screenshotModal.paymentReference}</strong></>
+                                    )}
+                                    &nbsp;·&nbsp; Total: <strong>KES {Number(screenshotModal.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                                </p>
+                            </div>
+                            <button className="btn-icon" onClick={closeScreenshot}><X size={20} /></button>
+                        </div>
+
+                        {/* Items summary */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '0 0 12px 0' }}>
+                            {screenshotModal.items?.map((item, i) => (
+                                <span key={i} className="order-item-tag">{item.productName} × {item.quantity}</span>
+                            ))}
+                        </div>
+
+                        {/* Screenshot image */}
+                        <div className="screenshot-viewer" style={{
+                            background: 'var(--bg-tertiary, #1a1a2e)',
+                            borderRadius: '10px',
+                            minHeight: '280px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            marginBottom: '16px'
+                        }}>
+                            {screenshotLoading && (
+                                <div style={{ textAlign: 'center', color: 'var(--text-muted, #888)' }}>
+                                    <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite' }} />
+                                    <p style={{ marginTop: '8px' }}>Loading screenshot…</p>
+                                </div>
+                            )}
+                            {!screenshotLoading && screenshotUrl === 'error' && (
+                                <div style={{ textAlign: 'center', color: 'var(--text-muted, #888)' }}>
+                                    <AlertTriangle size={32} />
+                                    <p style={{ marginTop: '8px' }}>Could not load screenshot.</p>
+                                </div>
+                            )}
+                            {!screenshotLoading && screenshotUrl && screenshotUrl !== 'error' && (
+                                <img
+                                    src={screenshotUrl}
+                                    alt="Payment proof"
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '480px',
+                                        objectFit: 'contain',
+                                        borderRadius: '8px',
+                                        display: 'block'
+                                    }}
+                                />
+                            )}
+                        </div>
+
+                        {/* Open in new tab link */}
+                        {screenshotUrl && screenshotUrl !== 'error' && (
+                            <div style={{ textAlign: 'right', marginBottom: '12px' }}>
+                                <a href={screenshotUrl} target="_blank" rel="noreferrer"
+                                    style={{ fontSize: '0.82rem', color: 'var(--accent-info, #60a5fa)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <ExternalLink size={13} /> Open full image in new tab
+                                </a>
+                            </div>
+                        )}
+
+                        {/* Decision buttons */}
+                        <div className="modal-actions" style={{ borderTop: '1px solid var(--border-color, #333)', paddingTop: '16px' }}>
+                            <button className="btn btn-outline" onClick={closeScreenshot}>Close</button>
+                            <button
+                                className="btn btn-danger"
+                                onClick={() => {
+                                    closeScreenshot();
+                                    setRejectModal(screenshotModal);
+                                    setRejectReason('');
+                                }}
+                            >
+                                <XCircle size={16} /> Reject Payment
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => {
+                                    closeScreenshot();
+                                    setPayModal({ ...screenshotModal, isOnline: true });
+                                    setPayMsg({ type: '', text: '' });
+                                }}
+                            >
+                                <CheckCircle size={16} /> Approve Payment
                             </button>
                         </div>
                     </div>

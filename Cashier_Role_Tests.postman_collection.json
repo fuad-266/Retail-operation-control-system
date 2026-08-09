@@ -1,0 +1,932 @@
+{
+    "info": {
+        "_postman_id": "cashier-role-full-test",
+        "name": "🏪 Cashier Role — Complete Test Suite",
+        "description": "Full end-to-end test coverage for the CASHIER role.\n\n**Setup:**\n1. Run requests in ORDER (they depend on each other via variables)\n2. The Login step auto-saves {{cashier_token}} and {{cashier_id}}\n3. Use the `OWNER - Create Cashier User` step once to seed a cashier account\n\n**Variables set automatically by tests:**\n- `cashier_token` — JWT bearer token\n- `cashier_id` — UUID of the logged-in cashier\n- `created_order_id` — UUID of a freshly created pending order\n- `created_reserved_id` — UUID of a freshly created reserved order\n- `receipt_number` — Receipt number from confirm payment\n- `product_id` — Grabbed from products list",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8080"
+        },
+        {
+            "key": "cashier_token",
+            "value": ""
+        },
+        {
+            "key": "cashier_id",
+            "value": ""
+        },
+        {
+            "key": "owner_token",
+            "value": ""
+        },
+        {
+            "key": "product_id",
+            "value": ""
+        },
+        {
+            "key": "created_order_id",
+            "value": ""
+        },
+        {
+            "key": "created_reserved_id",
+            "value": ""
+        },
+        {
+            "key": "receipt_number",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "🔐 0. OWNER — Login (to create cashier user)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.collectionVariables.set('owner_token', json.token);",
+                            "pm.test('Got owner token', () => pm.expect(json.role).to.eql('OWNER'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{base_url}}/api/auth/login",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"admin@shop.com\",\n  \"password\": \"password123\"\n}"
+                }
+            }
+        },
+        {
+            "name": "👤 1. OWNER — Create Cashier User",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "const json = pm.response.json();",
+                            "pm.test('Role is CASHIER', () => pm.expect(json.role).to.eql('CASHIER'));",
+                            "pm.test('Has fullName', () => pm.expect(json.fullName).to.be.a('string'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{owner_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/users",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"fullName\": \"Test Cashier\",\n  \"email\": \"cashier@shop.com\",\n  \"phoneNumber\": \"0700000001\",\n  \"password\": \"cashier123\",\n  \"role\": \"CASHIER\"\n}"
+                }
+            }
+        },
+        {
+            "name": "🔑 2. CASHIER — Login",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.collectionVariables.set('cashier_token', json.token);",
+                            "pm.collectionVariables.set('cashier_id', json.userId);",
+                            "pm.test('Role is CASHIER', () => pm.expect(json.role).to.eql('CASHIER'));",
+                            "pm.test('Token present', () => pm.expect(json.token).to.be.a('string').and.not.empty);",
+                            "pm.test('UserId present', () => pm.expect(json.userId).to.be.a('string').and.not.empty);",
+                            "console.log('✅ Cashier logged in. Token saved.');"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{base_url}}/api/auth/login",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"cashier@shop.com\",\n  \"password\": \"cashier123\"\n}"
+                }
+            }
+        },
+        {
+            "name": "🔑 2b. CASHIER — Login with wrong password (expect 401)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 401 for bad credentials', () => pm.response.to.have.status(401));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{base_url}}/api/auth/login",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"cashier@shop.com\",\n  \"password\": \"WRONG_PASSWORD\"\n}"
+                }
+            }
+        },
+        {
+            "name": "📦 3. CASHIER — Get Products List (grab product_id)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test('Returns an array', () => pm.expect(json).to.be.an('array'));",
+                            "if (json.length > 0) {",
+                            "  const active = json.find(p => p.active !== false) || json[0];",
+                            "  pm.collectionVariables.set('product_id', active.id);",
+                            "  console.log('✅ product_id set to: ' + active.id + ' (' + active.name + ')');",
+                            "  pm.test('Product has id', () => pm.expect(active.id).to.be.a('string'));",
+                            "  pm.test('Product has name', () => pm.expect(active.name).to.be.a('string'));",
+                            "  pm.test('Product has price', () => pm.expect(active.price).to.exist);",
+                            "} else {",
+                            "  console.warn('⚠️ No products found — create a product via OWNER first');",
+                            "}"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/products"
+            }
+        },
+        {
+            "name": "🛒 4. CASHIER — Create Pending Order (in-store walk-in)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "const json = pm.response.json();",
+                            "pm.collectionVariables.set('created_order_id', json.id);",
+                            "pm.test('Order id present', () => pm.expect(json.id).to.be.a('string'));",
+                            "pm.test('Status is PENDING', () => pm.expect(json.status).to.eql('PENDING'));",
+                            "pm.test('Has items', () => pm.expect(json.items).to.be.an('array').that.is.not.empty);",
+                            "pm.test('totalAmountKes is positive', () => pm.expect(Number(json.totalAmountKes)).to.be.above(0));",
+                            "pm.test('totalAmountEtb present', () => pm.expect(json.totalAmountEtb).to.exist);",
+                            "pm.test('sellerName present', () => pm.expect(json.sellerName).to.be.a('string'));",
+                            "console.log('✅ Order created: ' + json.id);"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/orders",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"customerName\": \"Walk-in Customer\",\n  \"items\": [\n    {\n      \"productId\": \"{{product_id}}\",\n      \"quantity\": 1\n    }\n  ]\n}"
+                }
+            }
+        },
+        {
+            "name": "🛒 4b. CASHIER — Create Order with invalid body (expect 400)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 400 for empty items', () => pm.response.to.have.status(400));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/orders",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"customerName\": \"Test\",\n  \"items\": []\n}"
+                }
+            }
+        },
+        {
+            "name": "📋 5. CASHIER — List Pending Orders",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test('Returns array', () => pm.expect(json).to.be.an('array'));",
+                            "const orderId = pm.collectionVariables.get('created_order_id');",
+                            "const found = json.find(o => o.id === orderId);",
+                            "pm.test('Our new order appears in pending list', () => pm.expect(found).to.exist);",
+                            "pm.test('Order status is PENDING', () => pm.expect(found.status).to.eql('PENDING'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/orders/pending"
+            }
+        },
+        {
+            "name": "📅 6. CASHIER — Create Reserved Order",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "const json = pm.response.json();",
+                            "pm.collectionVariables.set('created_reserved_id', json.id);",
+                            "pm.test('Status is RESERVED', () => pm.expect(json.status).to.eql('RESERVED'));",
+                            "pm.test('reservedForName present', () => pm.expect(json.reservedForName).to.eql('Jane Doe'));",
+                            "pm.test('reservationExpiresAt present', () => pm.expect(json.reservationExpiresAt).to.exist);",
+                            "pm.test('Has items', () => pm.expect(json.items).to.be.an('array').that.is.not.empty);",
+                            "console.log('✅ Reserved order created: ' + json.id);"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/orders/reserve",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"reservedForName\": \"Jane Doe\",\n  \"reservedForPhone\": \"0712345678\",\n  \"items\": [\n    {\n      \"productId\": \"{{product_id}}\",\n      \"quantity\": 1\n    }\n  ]\n}"
+                }
+            }
+        },
+        {
+            "name": "📋 7. CASHIER — List Reserved Orders",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test('Returns array', () => pm.expect(json).to.be.an('array'));",
+                            "const reservedId = pm.collectionVariables.get('created_reserved_id');",
+                            "const found = json.find(o => o.id === reservedId);",
+                            "pm.test('Reserved order in list', () => pm.expect(found).to.exist);",
+                            "pm.test('Status is RESERVED', () => pm.expect(found.status).to.eql('RESERVED'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/orders/reserved"
+            }
+        },
+        {
+            "name": "🔄 8. CASHIER — Convert Reserved → Pending",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test('Status changed to PENDING', () => pm.expect(json.status).to.eql('PENDING'));",
+                            "pm.test('reservationExpiresAt cleared', () => pm.expect(json.reservationExpiresAt).to.not.exist);"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/orders/{{created_reserved_id}}/convert-to-pending"
+            }
+        },
+        {
+            "name": "🌐 9. CASHIER — List Online Orders Pending Verification",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test('Returns array', () => pm.expect(json).to.be.an('array'));",
+                            "console.log('Online orders awaiting verification: ' + json.length);"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/orders/online/pending-verification"
+            }
+        },
+        {
+            "name": "💰 10. CASHIER — Confirm Payment (Cash / KES)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.collectionVariables.set('receipt_number', json.receiptNumber);",
+                            "pm.test('receiptNumber present', () => pm.expect(json.receiptNumber).to.match(/RCP-\\d{8}-\\d{4}/));",
+                            "pm.test('paymentMethod is CASH', () => pm.expect(json.paymentMethod).to.eql('CASH'));",
+                            "pm.test('paymentCurrency is KES', () => pm.expect(json.paymentCurrency).to.eql('KES'));",
+                            "pm.test('amount is positive', () => pm.expect(Number(json.amount)).to.be.above(0));",
+                            "pm.test('totalAmount present', () => pm.expect(json.totalAmount).to.exist);",
+                            "pm.test('confirmedByName present', () => pm.expect(json.confirmedByName).to.be.a('string').and.not.empty);",
+                            "pm.test('items array exists', () => pm.expect(json.items).to.be.an('array'));",
+                            "pm.test('status is PAID', () => pm.expect(json.status).to.eql('PAID'));",
+                            "console.log('✅ Receipt: ' + json.receiptNumber);"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/payments/confirm/{{created_order_id}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"paymentMethod\": \"CASH\",\n  \"paymentCurrency\": \"KES\"\n}"
+                }
+            }
+        },
+        {
+            "name": "💰 10b. CASHIER — Confirm Payment AGAIN (expect 409 Conflict)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 409 for double-payment', () => pm.response.to.have.status(409));",
+                            "const json = pm.response.json();",
+                            "pm.test('Error message present', () => pm.expect(json.message).to.be.a('string'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/payments/confirm/{{created_order_id}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"paymentMethod\": \"CASH\",\n  \"paymentCurrency\": \"KES\"\n}"
+                }
+            }
+        },
+        {
+            "name": "💰 10c. CASHIER — Confirm Payment ETB Currency",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200 or 409', () => {",
+                            "  pm.expect([200, 409]).to.include(pm.response.code);",
+                            "});",
+                            "if (pm.response.code === 200) {",
+                            "  const json = pm.response.json();",
+                            "  pm.test('paymentCurrency is ETB', () => pm.expect(json.paymentCurrency).to.eql('ETB'));",
+                            "}"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/payments/confirm/{{created_reserved_id}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"paymentMethod\": \"BANK_TRANSFER\",\n  \"paymentCurrency\": \"ETB\"\n}"
+                }
+            }
+        },
+        {
+            "name": "🧾 11. CASHIER — Get Today's Receipts (Order History)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test('Returns array', () => pm.expect(json).to.be.an('array'));",
+                            "const rn = pm.collectionVariables.get('receipt_number');",
+                            "const found = json.find(r => r.receiptNumber === rn);",
+                            "pm.test('Our receipt appears in today history', () => pm.expect(found).to.exist);",
+                            "pm.test('Receipt has items', () => pm.expect(found.items).to.be.an('array'));",
+                            "pm.test('confirmedByName is set (not null)', () => pm.expect(found.confirmedByName).to.be.a('string').and.not.empty);",
+                            "pm.test('receiptNumber matches pattern', () => pm.expect(found.receiptNumber).to.match(/RCP-\\d{8}-\\d{4}/));",
+                            "console.log('✅ Order history is working. Receipts today: ' + json.length);"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/receipts/today"
+            }
+        },
+        {
+            "name": "🧾 12. CASHIER — Get Receipt by Number",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "const rn = pm.collectionVariables.get('receipt_number');",
+                            "pm.test('receiptNumber matches', () => pm.expect(json.receiptNumber).to.eql(rn));",
+                            "pm.test('items array exists', () => pm.expect(json.items).to.be.an('array'));",
+                            "pm.test('confirmedByName set', () => pm.expect(json.confirmedByName).to.be.a('string').and.not.empty);",
+                            "pm.test('status is PAID or FULFILLED', () => pm.expect(['PAID','FULFILLED']).to.include(json.status));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/receipts/{{receipt_number}}"
+            }
+        },
+        {
+            "name": "🧾 12b. CASHIER — Get Non-Existent Receipt (expect 404)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 404 for unknown receipt', () => pm.response.to.have.status(404));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/receipts/RCP-00000000-0000"
+            }
+        },
+        {
+            "name": "⚙️ 13. CASHIER — Update Currency Preference to ETB",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/users/me/currency-preference",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"currency\": \"ETB\"\n}"
+                }
+            }
+        },
+        {
+            "name": "⚙️ 13b. CASHIER — Update Currency Preference back to KES",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/users/me/currency-preference",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"currency\": \"KES\"\n}"
+                }
+            }
+        },
+        {
+            "name": "🚫 14. CASHIER — Cancel OWN Order (should work)",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "exec": [
+                            "// This creates a fresh order that we'll cancel",
+                            "const product_id = pm.collectionVariables.get('product_id');",
+                            "const token = pm.collectionVariables.get('cashier_token');",
+                            "pm.sendRequest({",
+                            "  url: pm.collectionVariables.get('base_url') + '/api/orders',",
+                            "  method: 'POST',",
+                            "  header: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },",
+                            "  body: { mode: 'raw', raw: JSON.stringify({ customerName: 'Cancel Test', items: [{ productId: product_id, quantity: 1 }] }) }",
+                            "}, function(err, res) {",
+                            "  if (res && res.code === 201) {",
+                            "    pm.collectionVariables.set('cancel_order_id', res.json().id);",
+                            "    console.log('Pre-created order to cancel: ' + res.json().id);",
+                            "  }",
+                            "});"
+                        ]
+                    }
+                },
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/orders/{{cancel_order_id}}/cancel"
+            }
+        },
+        {
+            "name": "🔒 15. CASHIER — Access OWNER-Only Endpoint (expect 403)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 403 Forbidden for cashier on owner endpoint',",
+                            "  () => pm.response.to.have.status(403));",
+                            "const json = pm.response.json();",
+                            "pm.test('Access denied message', () => pm.expect(json.message).to.include('Access denied'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/reports/sales?from=2026-01-01&to=2026-12-31"
+            }
+        },
+        {
+            "name": "🔒 16. CASHIER — Access Without Token (expect 401)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 401 Unauthorized without token',",
+                            "  () => pm.response.to.have.status(401));",
+                            "const json = pm.response.json();",
+                            "pm.test('Token invalid message', () => pm.expect(json.message).to.include('Token invalid or expired'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/orders/pending"
+            }
+        },
+        {
+            "name": "🔒 17. CASHIER — Fulfill Receipt (GOODS_STAFF only, expect 403)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 403 — cashier cannot fulfill receipts',",
+                            "  () => pm.response.to.have.status(403));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/receipts/{{receipt_number}}/fulfill"
+            }
+        },
+        {
+            "name": "🔄 18. CASHIER — Refresh Token",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test('New access token returned', () => pm.expect(json.token).to.be.a('string').and.not.empty);",
+                            "pm.collectionVariables.set('cashier_token', json.token);",
+                            "console.log('✅ Token refreshed successfully');"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{base_url}}/api/auth/refresh",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"refreshToken\": \"{{cashier_refresh_token}}\"\n}"
+                }
+            }
+        },
+        {
+            "name": "💰 19. CASHIER — Confirm Payment MOBILE_MONEY / KES",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "exec": [
+                            "// Create a fresh order for this payment test",
+                            "const product_id = pm.collectionVariables.get('product_id');",
+                            "const token = pm.collectionVariables.get('cashier_token');",
+                            "pm.sendRequest({",
+                            "  url: pm.collectionVariables.get('base_url') + '/api/orders',",
+                            "  method: 'POST',",
+                            "  header: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },",
+                            "  body: { mode: 'raw', raw: JSON.stringify({ customerName: 'Mobile Pay Test', items: [{ productId: product_id, quantity: 1 }] }) }",
+                            "}, function(err, res) {",
+                            "  if (res && res.code === 201) {",
+                            "    pm.collectionVariables.set('mobile_order_id', res.json().id);",
+                            "  }",
+                            "});"
+                        ]
+                    }
+                },
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test('paymentMethod is MOBILE_MONEY', () => pm.expect(json.paymentMethod).to.eql('MOBILE_MONEY'));",
+                            "pm.test('receiptNumber valid', () => pm.expect(json.receiptNumber).to.match(/RCP-\\d{8}-\\d{4}/));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/payments/confirm/{{mobile_order_id}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"paymentMethod\": \"MOBILE_MONEY\",\n  \"paymentCurrency\": \"KES\"\n}"
+                }
+            }
+        },
+        {
+            "name": "💰 20. CASHIER — Confirm Payment invalid currency (expect 400)",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "exec": [
+                            "// Create a fresh order",
+                            "const product_id = pm.collectionVariables.get('product_id');",
+                            "const token = pm.collectionVariables.get('cashier_token');",
+                            "pm.sendRequest({",
+                            "  url: pm.collectionVariables.get('base_url') + '/api/orders',",
+                            "  method: 'POST',",
+                            "  header: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },",
+                            "  body: { mode: 'raw', raw: JSON.stringify({ customerName: 'Validation Test', items: [{ productId: product_id, quantity: 1 }] }) }",
+                            "}, function(err, res) {",
+                            "  if (res && res.code === 201) {",
+                            "    pm.collectionVariables.set('validation_order_id', res.json().id);",
+                            "  }",
+                            "});"
+                        ]
+                    }
+                },
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 400 for invalid currency', () => pm.response.to.have.status(400));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{cashier_token}}"
+                    }
+                ],
+                "url": "{{base_url}}/api/payments/confirm/{{validation_order_id}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"paymentMethod\": \"CASH\",\n  \"paymentCurrency\": \"USD\"\n}"
+                }
+            }
+        }
+    ]
+}

@@ -1,9 +1,9 @@
 import React from 'react'
+import { Feather } from '@expo/vector-icons'
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   Image,
@@ -61,7 +61,7 @@ export default function CartScreen() {
         <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
       ) : (
         <View style={styles.placeholderImage}>
-          <Text style={styles.placeholderText}>📦</Text>
+          <Feather name="box" size={28} color="#999" />
         </View>
       )}
 
@@ -91,7 +91,7 @@ export default function CartScreen() {
             style={styles.removeButton}
             onPress={() => handleRemoveItem(item.id, item.name)}
           >
-            <Text style={styles.removeButtonText}>🗑️</Text>
+            <Feather name="trash-2" size={20} color="#D80000" />
           </TouchableOpacity>
         </View>
       </View>
@@ -119,7 +119,7 @@ export default function CartScreen() {
 
         <View style={styles.emptyCart}>
           <View style={styles.emptyCartIconContainer}>
-            <Text style={styles.emptyCartIcon}>🛒</Text>
+            <Feather name="shopping-cart" size={44} color="#E8601C" />
           </View>
           <Text style={styles.emptyCartTitle}>Your cart is empty</Text>
           <Text style={styles.emptyCartText}>Add some products to get started</Text>

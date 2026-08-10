@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -160,7 +159,7 @@ export default function CheckoutScreen() {
               {paymentMethod === 'BANK_TRANSFER' && <View style={styles.radioButtonInner} />}
             </View>
             <View style={styles.paymentOptionContent}>
-              <Text style={styles.paymentOptionTitle}>🏦 Bank Transfer</Text>
+              <Text style={styles.paymentOptionTitle}>Bank Transfer</Text>
               <Text style={styles.paymentOptionDescription}>
                 Transfer to our bank account and upload proof of payment
               </Text>
@@ -178,7 +177,7 @@ export default function CheckoutScreen() {
               {paymentMethod === 'MOBILE_MONEY' && <View style={styles.radioButtonInner} />}
             </View>
             <View style={styles.paymentOptionContent}>
-              <Text style={styles.paymentOptionTitle}>📱 Mobile Money</Text>
+              <Text style={styles.paymentOptionTitle}>Mobile Money</Text>
               <Text style={styles.paymentOptionDescription}>
                 Pay via M-PESA or similar and upload confirmation screenshot
               </Text>
@@ -196,7 +195,7 @@ export default function CheckoutScreen() {
               {paymentMethod === 'MESSENGER' && <View style={styles.radioButtonInner} />}
             </View>
             <View style={styles.paymentOptionContent}>
-              <Text style={styles.paymentOptionTitle}>💬 Sent by Messenger</Text>
+              <Text style={styles.paymentOptionTitle}>Sent by Messenger</Text>
               <Text style={styles.paymentOptionDescription}>
                 We'll contact you via messenger for payment arrangement
               </Text>

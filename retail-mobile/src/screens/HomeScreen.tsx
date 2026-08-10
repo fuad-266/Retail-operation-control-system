@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react'
+import { Feather, Ionicons } from '@expo/vector-icons'
 import {
   View,
   Text,
@@ -28,17 +29,17 @@ const { width } = Dimensions.get('window')
 const CARD_WIDTH = (width - 55) / 2
 
 const CATEGORY_ICONS: Record<string, string> = {
-  'Clothes': '👕',
-  'Gadgets': '📱',
-  'Electronics': '💻',
-  'Household Item': '🏠',
-  'Food': '🍔',
-  'Beverages': '🥤',
-  'Beauty': '💄',
-  'Sports': '⚽',
-  'Books': '📚',
-  'Toys': '🧸',
-  'default': '📦',
+  'Clothes': 'shirt-outline',
+  'Gadgets': 'phone-portrait-outline',
+  'Electronics': 'laptop-outline',
+  'Household Item': 'home-outline',
+  'Food': 'restaurant-outline',
+  'Beverages': 'cafe-outline',
+  'Beauty': 'rose-outline',
+  'Sports': 'football-outline',
+  'Books': 'book-outline',
+  'Toys': 'game-controller-outline',
+  'default': 'cube-outline',
 }
 
 export default function HomeScreen() {
@@ -106,9 +107,11 @@ export default function HomeScreen() {
           styles.favoriteCircle,
           favorites.has(item.id) && styles.favoriteCircleActive
         ]}>
-          <Text style={styles.favoriteIcon}>
-            {favorites.has(item.id) ? '❤️' : '🤍'}
-          </Text>
+          <Ionicons
+            name={favorites.has(item.id) ? 'heart' : 'heart-outline'}
+            size={16}
+            color={favorites.has(item.id) ? '#D80000' : '#666'}
+          />
         </View>
       </TouchableOpacity>
 
@@ -117,7 +120,7 @@ export default function HomeScreen() {
         <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
       ) : (
         <View style={styles.placeholderImage}>
-          <Text style={styles.placeholderText}>📦</Text>
+          <Feather name="box" size={36} color="#999" />
         </View>
       )}
 
@@ -152,7 +155,7 @@ export default function HomeScreen() {
         <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
         <View style={styles.loadingContainer}>
           <View style={styles.loadingSpinner}>
-            <Text style={{ fontSize: 40 }}>🛍️</Text>
+            <Feather name="shopping-bag" size={40} color="#E8601C" />
           </View>
           <Text style={styles.loadingText}>Loading products...</Text>
         </View>
@@ -165,7 +168,7 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
         <View style={styles.loadingContainer}>
-          <Text style={{ fontSize: 48, marginBottom: 16 }}>😔</Text>
+          <Feather name="alert-circle" size={48} color="#D80000" style={{ marginBottom: 16 }} />
           <Text style={styles.errorText}>Error loading products</Text>
           <Text style={styles.errorSubText}>Please check your connection and try again</Text>
         </View>
@@ -186,7 +189,7 @@ export default function HomeScreen() {
           <View>
             <Text style={styles.locationLabel}>Location</Text>
             <View style={styles.locationRow}>
-              <Text style={styles.locationPin}>📍</Text>
+              <Feather name="map-pin" size={14} color="#1A1A2E" />
               <Text style={styles.locationText}>Welcome to Shop</Text>
             </View>
           </View>
@@ -211,7 +214,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-              <Text style={styles.logoutIcon}>🚪</Text>
+              <Text style={styles.logoutBtnText}>Logout</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -219,7 +222,7 @@ export default function HomeScreen() {
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <Feather name="search" size={16} color="#999" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search"
@@ -244,7 +247,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <View style={styles.bannerImageContainer}>
-              <Text style={styles.bannerEmoji}>🛒</Text>
+              <Feather name="shopping-cart" size={32} color="#fff" />
             </View>
           </View>
         </View>
@@ -267,7 +270,7 @@ export default function HomeScreen() {
                     styles.categoryIconContainer,
                     selectedCategory === cat && styles.categoryIconContainerActive,
                   ]}>
-                    <Text style={styles.categoryIcon}>{getCategoryIcon(cat)}</Text>
+                    <Ionicons name={getCategoryIcon(cat) as any} size={24} color={selectedCategory === cat ? '#E8601C' : '#666'} />
                   </View>
                   <Text style={[
                     styles.categoryLabel,
@@ -304,7 +307,7 @@ export default function HomeScreen() {
 
           {filteredProducts.length === 0 && (
             <View style={styles.emptyProducts}>
-              <Text style={{ fontSize: 48, marginBottom: 12 }}>🔍</Text>
+              <Feather name="search" size={48} color="#999" style={{ marginBottom: 12 }} />
               <Text style={styles.emptyProductsTitle}>No products found</Text>
               <Text style={styles.emptyProductsText}>
                 Try a different search or category
@@ -318,14 +321,14 @@ export default function HomeScreen() {
       <View style={[styles.bottomBar, { bottom: Math.max(20, insets.bottom + 10) }]}>
         <TouchableOpacity style={styles.tabItem}>
           <View style={styles.tabActiveIndicator}>
-            <Text style={styles.tabIcon}>🏠</Text>
+            <Feather name="home" size={20} color="#fff" />
           </View>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.tabItem}
           onPress={() => navigation.navigate('Cart')}
         >
-          <Text style={styles.tabIcon}>🛒</Text>
+          <Feather name="shopping-cart" size={20} color="#666" />
           {cartItemCount > 0 && (
             <View style={styles.tabBadge}>
               <Text style={styles.tabBadgeText}>{cartItemCount}</Text>
@@ -336,13 +339,13 @@ export default function HomeScreen() {
           style={styles.tabItem}
           onPress={() => { }}
         >
-          <Text style={styles.tabIcon}>❤️</Text>
+          <Feather name="heart" size={20} color="#666" />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.tabItem}
           onPress={() => navigation.navigate('Orders')}
         >
-          <Text style={styles.tabIcon}>📋</Text>
+          <Feather name="list" size={20} color="#666" />
         </TouchableOpacity>
       </View>
     </SafeAreaView >
@@ -443,15 +446,18 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   logoutBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#FFE5E5',
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 4,
   },
-  logoutIcon: {
-    fontSize: 16,
+  logoutBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#D80000',
   },
 
   // Search

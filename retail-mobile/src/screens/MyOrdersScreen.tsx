@@ -1,4 +1,5 @@
 import React from 'react'
+import { Feather } from '@expo/vector-icons'
 import {
   View,
   Text,
@@ -132,7 +133,7 @@ export default function MyOrdersScreen() {
 
       {orders && orders.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>📦</Text>
+          <Feather name="box" size={64} color="#999" style={{ marginBottom: 16 }} />
           <Text style={styles.emptyTitle}>No Orders Yet</Text>
           <Text style={styles.emptyText}>Start shopping to place your first order</Text>
           <TouchableOpacity
@@ -156,7 +157,6 @@ export default function MyOrdersScreen() {
     </SafeAreaView>
   )
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

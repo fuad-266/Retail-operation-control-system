@@ -9,9 +9,20 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
+import * as SecureStore from 'expo-secure-store'
 import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { authService } from '../services/auth.service'
+
+// Clears all stored data (token, cart, etc.) for dev/debug purposes
+const clearAllData = async () => {
+  try {
+    await SecureStore.deleteItemAsync('auth')
+  } catch (e) {
+    console.warn('clearAllData error:', e)
+  }
+}
+
 
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -47,7 +58,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
@@ -95,6 +106,17 @@ export default function LoginScreen() {
         <Text style={styles.noAccountText}>
           Don't have an account? Contact the shop to get your login credentials.
         </Text>
+
+        {/* Development Helper - Remove in production */}
+        <TouchableOpacity
+          style={styles.clearDataButton}
+          onPress={async () => {
+            await clearAllData()
+            Alert.alert('Success', 'All stored data cleared. App will now show login screen on next launch.')
+          }}
+        >
+          <Text style={styles.clearDataButtonText}>Clear Stored Data (Dev)</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   )
@@ -165,5 +187,19 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  clearDataButton: {
+    backgroundColor: '#EF4444',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    alignSelf: 'center',
+  },
+  clearDataButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 })

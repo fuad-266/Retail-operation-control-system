@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
+import { Feather } from '@expo/vector-icons'
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Image,
@@ -150,7 +150,7 @@ export default function PaymentUploadScreen() {
         {/* Order Info Card */}
         <View style={styles.orderInfoCard}>
           <View style={styles.orderInfoIcon}>
-            <Text style={{ fontSize: 24 }}>💰</Text>
+            <Feather name="credit-card" size={24} color="#fff" />
           </View>
           <Text style={styles.orderInfoId}>Order #{orderId.slice(0, 8)}</Text>
           <Text style={styles.orderInfoTotal}>
@@ -162,7 +162,7 @@ export default function PaymentUploadScreen() {
         {/* M-PESA Instructions */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>📱</Text>
+            <Feather name="smartphone" size={18} color="#E8601C" style={{ marginRight: 8 }} />
             <Text style={styles.cardTitle}>M-PESA (Mobile Money)</Text>
           </View>
           <View style={styles.instructionsList}>
@@ -193,7 +193,7 @@ export default function PaymentUploadScreen() {
         {/* Bank Transfer */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>🏦</Text>
+            <Feather name="credit-card" size={18} color="#E8601C" style={{ marginRight: 8 }} />
             <Text style={styles.cardTitle}>Bank Transfer</Text>
           </View>
           <View style={styles.bankDetails}>
@@ -213,7 +213,7 @@ export default function PaymentUploadScreen() {
         {/* Upload Screenshot Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>📸</Text>
+            <Feather name="image" size={18} color="#E8601C" style={{ marginRight: 8 }} />
             <Text style={styles.cardTitle}>Upload Payment Screenshot</Text>
           </View>
 
@@ -231,14 +231,14 @@ export default function PaymentUploadScreen() {
             <View style={styles.uploadButtons}>
               <TouchableOpacity style={styles.uploadButton} onPress={takePhoto} activeOpacity={0.85}>
                 <View style={styles.uploadIconCircle}>
-                  <Text style={styles.uploadIcon}>📷</Text>
+                  <Feather name="camera" size={20} color="#fff" />
                 </View>
                 <Text style={styles.uploadText}>Take Photo</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.uploadButton} onPress={pickImage} activeOpacity={0.85}>
                 <View style={styles.uploadIconCircle}>
-                  <Text style={styles.uploadIcon}>🖼️</Text>
+                  <Feather name="image" size={20} color="#fff" />
                 </View>
                 <Text style={styles.uploadText}>Gallery</Text>
               </TouchableOpacity>
@@ -253,7 +253,7 @@ export default function PaymentUploadScreen() {
         {/* Payment Reference */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>🔖</Text>
+            <Feather name="bookmark" size={18} color="#E8601C" style={{ marginRight: 8 }} />
             <Text style={styles.cardTitle}>Payment Reference</Text>
             <View style={styles.optionalBadge}>
               <Text style={styles.optionalText}>Optional</Text>

@@ -1,5 +1,6 @@
 import axios from 'axios'
 import * as SecureStore from 'expo-secure-store'
+import { triggerGlobalLogout } from '../context/AuthContext'
 
 const API_BASE_URL = 'http://10.216.177.228:8080/api' // Your backend running on this computer
 
@@ -24,13 +25,13 @@ api.interceptors.request.use(async (config) => {
   return config
 })
 
-// Handle authentication errors
+// Handle authentication errors - triggers React state update via global logout
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      await SecureStore.deleteItemAsync('auth')
-      // Navigation will be handled by the auth context
+      // This clears SecureStore AND updates React state → navigates to Login
+      triggerGlobalLogout()
     }
     return Promise.reject(error)
   }

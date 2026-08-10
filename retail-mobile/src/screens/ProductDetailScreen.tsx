@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Feather, Ionicons } from '@expo/vector-icons'
 import {
   View,
   Text,
@@ -52,7 +53,7 @@ export default function ProductDetailScreen() {
         <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
         <View style={styles.loadingContainer}>
           <View style={styles.loadingCircle}>
-            <Text style={{ fontSize: 32 }}>⏳</Text>
+            <Feather name="shopping-bag" size={32} color="#E8601C" />
           </View>
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
@@ -65,7 +66,7 @@ export default function ProductDetailScreen() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
         <View style={styles.loadingContainer}>
-          <Text style={{ fontSize: 48, marginBottom: 12 }}>😔</Text>
+          <Feather name="alert-circle" size={48} color="#D80000" style={{ marginBottom: 12 }} />
           <Text style={styles.loadingText}>Product not found</Text>
         </View>
       </SafeAreaView>
@@ -112,7 +113,7 @@ export default function ProductDetailScreen() {
           style={styles.headerBtn}
           onPress={() => navigation.navigate('Cart')}
         >
-          <Text style={styles.headerBtnText}>🛒</Text>
+          <Feather name="shopping-cart" size={20} color="#1A1A2E" />
           {cartItemCount > 0 && (
             <View style={styles.headerBadge}>
               <Text style={styles.headerBadgeText}>{cartItemCount}</Text>
@@ -131,7 +132,7 @@ export default function ProductDetailScreen() {
             <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
           ) : (
             <View style={styles.placeholderImage}>
-              <Text style={styles.placeholderText}>📦</Text>
+              <Feather name="box" size={64} color="#999" />
             </View>
           )}
           {/* Favorite */}
@@ -139,7 +140,11 @@ export default function ProductDetailScreen() {
             style={styles.favoriteBtn}
             onPress={() => setIsFavorite(!isFavorite)}
           >
-            <Text style={styles.favoriteIcon}>{isFavorite ? '❤️' : '🤍'}</Text>
+            <Ionicons
+              name={isFavorite ? 'heart' : 'heart-outline'}
+              size={22}
+              color={isFavorite ? '#D80000' : '#666'}
+            />
           </TouchableOpacity>
         </View>
 
@@ -218,7 +223,7 @@ export default function ProductDetailScreen() {
             onPress={handleAddToCart}
             activeOpacity={0.85}
           >
-            <Text style={styles.addToCartIcon}>🛒</Text>
+            <Feather name="shopping-cart" size={18} color="#fff" />
             <Text style={styles.addToCartText}>Add to Cart</Text>
           </TouchableOpacity>
         </View>

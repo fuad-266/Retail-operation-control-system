@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react'
 import * as SecureStore from 'expo-secure-store'
 
 export type Role = 'OWNER' | 'CASHIER' | 'SELLER' | 'GOODS_STAFF' | 'CUSTOMER'
@@ -19,12 +19,30 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
+// Global logout function for use outside React (e.g., axios interceptor)
+let globalLogout: (() => void) | null = null
+export function setGlobalLogout(fn: () => void) {
+  globalLogout = fn
+}
+export function triggerGlobalLogout() {
+  if (globalLogout) globalLogout()
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadStoredAuth()
+  }, [])
+
+  // Register logout globally so axios interceptor can trigger it
+  useEffect(() => {
+    setGlobalLogout(async () => {
+      await SecureStore.deleteItemAsync('auth')
+      setUser(null)
+    })
+    return () => setGlobalLogout(() => { })
   }, [])
 
   const loadStoredAuth = async () => {
@@ -52,12 +70,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      logout, 
-      isAuthenticated: !!user, 
-      loading 
+    <AuthContext.Provider value={{
+      user,
+      login,
+      logout,
+      isAuthenticated: !!user,
+      loading
     }}>
       {children}
     </AuthContext.Provider>

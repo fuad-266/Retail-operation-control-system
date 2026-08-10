@@ -1,4 +1,5 @@
 import React from 'react'
+import { Feather } from '@expo/vector-icons'
 import {
   View,
   Text,
@@ -72,7 +73,7 @@ export default function OrderDetailScreen() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
         <View style={styles.loadingContainer}>
-          <Text style={{ fontSize: 48, marginBottom: 12 }}>😔</Text>
+          <Feather name="alert-circle" size={48} color="#D80000" style={{ marginBottom: 12 }} />
           <Text style={styles.loadingText}>Order not found</Text>
         </View>
       </SafeAreaView>
@@ -100,7 +101,7 @@ export default function OrderDetailScreen() {
         {/* Status Header Card */}
         <View style={styles.statusCard}>
           <View style={[styles.statusIconCircle, { backgroundColor: getStatusColor(order.status) + '20' }]}>
-            <Text style={styles.statusIconText}>📋</Text>
+            <Feather name="clipboard" size={26} color={getStatusColor(order.status)} />
           </View>
           <Text style={styles.statusOrderId}>Order #{order.id.slice(0, 8)}</Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '18' }]}>
@@ -123,14 +124,14 @@ export default function OrderDetailScreen() {
         {/* Order Items Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>🛒</Text>
+            <Feather name="shopping-cart" size={18} color="#E8601C" style={{ marginRight: 8 }} />
             <Text style={styles.cardTitle}>Order Items</Text>
           </View>
           {order.items.map((item) => (
             <View key={item.id} style={styles.itemRow}>
               <View style={styles.itemLeft}>
                 <View style={styles.itemIconCircle}>
-                  <Text style={styles.itemIconText}>📦</Text>
+                  <Feather name="box" size={16} color="#E8601C" />
                 </View>
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName}>{item.productName}</Text>
@@ -153,7 +154,7 @@ export default function OrderDetailScreen() {
         {/* Delivery Address Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>📍</Text>
+            <Feather name="map-pin" size={18} color="#E8601C" style={{ marginRight: 8 }} />
             <Text style={styles.cardTitle}>Delivery Address</Text>
           </View>
           <View style={styles.addressBox}>
@@ -165,7 +166,7 @@ export default function OrderDetailScreen() {
         {order.paymentReference && (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardIcon}>🧾</Text>
+              <Feather name="file-text" size={18} color="#E8601C" style={{ marginRight: 8 }} />
               <Text style={styles.cardTitle}>Payment Reference</Text>
             </View>
             <View style={styles.refBox}>
@@ -178,7 +179,7 @@ export default function OrderDetailScreen() {
         {order.status === 'REJECTED' && order.rejectionReason && (
           <View style={styles.rejectionCard}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardIcon}>⚠️</Text>
+              <Feather name="alert-triangle" size={18} color="#EF5350" style={{ marginRight: 8 }} />
               <Text style={[styles.cardTitle, { color: '#EF5350' }]}>Order Rejected</Text>
             </View>
             <Text style={styles.rejectionText}>{order.rejectionReason}</Text>
@@ -192,7 +193,7 @@ export default function OrderDetailScreen() {
             onPress={() => navigation.navigate('PaymentUpload', { orderId: order.id })}
             activeOpacity={0.85}
           >
-            <Text style={styles.actionIcon}>📤</Text>
+            <Feather name="upload" size={16} color="#fff" />
             <Text style={styles.actionButtonText}>Upload Payment Screenshot</Text>
           </TouchableOpacity>
         )}

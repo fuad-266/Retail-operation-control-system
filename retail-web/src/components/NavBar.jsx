@@ -45,8 +45,8 @@ export default function NavBar() {
     return (
         <nav className="navbar" id="main-navbar">
             <div className="navbar-brand">
-                <ClipboardList size={24} />
-                <span className="navbar-title">RetailOps</span>
+                <img src="/assets/logo.png" alt="Adama Shop Logo" style={{ height: '36px', marginRight: '12px' }} />
+                <span className="navbar-title">Adama Shop</span>
             </div>
 
             <div className="navbar-links">

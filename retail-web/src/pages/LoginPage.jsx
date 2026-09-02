@@ -26,10 +26,11 @@ export default function LoginPage() {
         setLoading(true);
 
         // Determine if identifier is email or phone
-        const isEmail = identifier.includes('@');
+        const cleanIdentifier = identifier.trim();
+        const isEmail = cleanIdentifier.includes('@');
         const credentials = {
             password,
-            ...(isEmail ? { email: identifier } : { phoneNumber: identifier }),
+            ...(isEmail ? { email: cleanIdentifier } : { phoneNumber: cleanIdentifier }),
         };
 
         try {
@@ -55,10 +56,10 @@ export default function LoginPage() {
 
                 <div className="login-card">
                     <div className="login-header">
-                        <div className="login-logo">
-                            <Store size={32} />
+                        <div className="login-logo" style={{ background: 'transparent', width: 'auto', height: 'auto', marginBottom: '16px' }}>
+                            <img src="/assets/logo.png" alt="Adama Shop Logo" style={{ height: '80px', objectFit: 'contain' }} />
                         </div>
-                        <h1>RetailOps</h1>
+                        <h1>Adama Shop</h1>
                         <p className="login-subtitle">Retail Operations Control System</p>
                     </div>
 

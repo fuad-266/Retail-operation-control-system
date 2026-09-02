@@ -24,19 +24,21 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
 
     public AuthResponse login(LoginRequest request) {
+        String phone = request.getPhoneNumber() != null ? request.getPhoneNumber().trim() : null;
+        String email = request.getEmail() != null ? request.getEmail().trim() : null;
+
         // Require at least one identifier
-        if ((request.getPhoneNumber() == null || request.getPhoneNumber().isBlank())
-                && (request.getEmail() == null || request.getEmail().isBlank())) {
+        if ((phone == null || phone.isBlank()) && (email == null || email.isBlank())) {
             throw new AppException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
         // Look up by phone first, then email
         User user = null;
-        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
-            user = userRepository.findByPhoneNumber(request.getPhoneNumber()).orElse(null);
+        if (phone != null && !phone.isBlank()) {
+            user = userRepository.findByPhoneNumber(phone).orElse(null);
         }
-        if (user == null && request.getEmail() != null && !request.getEmail().isBlank()) {
-            user = userRepository.findByEmail(request.getEmail()).orElse(null);
+        if (user == null && email != null && !email.isBlank()) {
+            user = userRepository.findByEmail(email).orElse(null);
         }
 
         // Generic message — do not reveal which field failed

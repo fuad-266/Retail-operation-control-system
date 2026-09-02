@@ -3186,3 +3186,360 @@ a:hover {
     border: none;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Goods Staff Page
+   ───────────────────────────────────────────────────────────────────────────── */
+.goods-staff-page {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* ── Action Selection Cards ── */
+.goods-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.goods-action-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.4rem;
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+}
+
+.goods-action-card:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.goods-action-card.active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-primary-glow);
+}
+
+.goods-action-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.goods-action-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.goods-action-card p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Manual Search ── */
+.receipt-search-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.receipt-search-form .search-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0 0.75rem;
+}
+
+.receipt-search-form .search-input-group svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.receipt-search-form input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  padding: 0.75rem 0.25rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: var(--font-family);
+}
+
+.receipt-search-form .btn {
+  flex-shrink: 0;
+}
+
+/* ── Receipt Card (reuse existing + extend) ── */
+.receipt-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.receipt-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.receipt-card-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  margin-bottom: 0.15rem;
+}
+
+.receipt-items {
+  padding: 1rem 1.5rem;
+}
+
+.receipt-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.receipt-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.receipt-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0;
+}
+
+.receipt-card .alert {
+  margin: 0 1.5rem 0;
+  border-radius: var(--radius-sm);
+}
+
+.receipt-card .btn-full {
+  margin: 1rem 1.5rem 1.5rem;
+  width: calc(100% - 3rem);
+}
+
+/* ── Loading Spinner ── */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   QR Scanner Overlay & Modal
+   ───────────────────────────────────────────────────────────────────────────── */
+.qr-scanner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.qr-scanner-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.qr-scanner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.qr-close-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.3rem;
+  transition: var(--transition);
+}
+
+.qr-close-btn:hover {
+  background: var(--accent-danger-bg);
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
+}
+
+/* Camera viewport wrapper with CSS overlays */
+.qr-viewport-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: #000;
+  overflow: hidden;
+}
+
+/* html5-qrcode renders its own video/canvas inside #qr-reader */
+.qr-reader {
+  width: 100%;
+  height: 100%;
+}
+
+/* Override html5-qrcode internal styles */
+.qr-reader>* {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* Animated scan line */
+.qr-scan-line {
+  position: absolute;
+  left: 15%;
+  width: 70%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+  animation: qr-scan 2s ease-in-out infinite;
+  top: 15%;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 0 8px var(--accent-primary);
+}
+
+@keyframes qr-scan {
+  0% {
+    top: 15%;
+    opacity: 1;
+  }
+
+  50% {
+    top: 85%;
+    opacity: 1;
+  }
+
+  100% {
+    top: 15%;
+    opacity: 1;
+  }
+}
+
+/* Corner brackets */
+.qr-corners {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 11;
+}
+
+.qr-corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: var(--accent-primary);
+  border-style: solid;
+}
+
+.qr-corner.tl {
+  top: 14%;
+  left: 14%;
+  border-width: 3px 0 0 3px;
+  border-radius: 4px 0 0 0;
+}
+
+.qr-corner.tr {
+  top: 14%;
+  right: 14%;
+  border-width: 3px 3px 0 0;
+  border-radius: 0 4px 0 0;
+}
+
+.qr-corner.bl {
+  bottom: 14%;
+  left: 14%;
+  border-width: 0 0 3px 3px;
+  border-radius: 0 0 0 4px;
+}
+
+.qr-corner.br {
+  bottom: 14%;
+  right: 14%;
+  border-width: 0 3px 3px 0;
+  border-radius: 0 0 4px 0;
+}
+
+/* Hint text */
+.qr-hint {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding: 0.75rem 1rem;
+}
+
+/* Camera switch buttons */
+.qr-cam-select {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 0 1rem 1rem;
+  flex-wrap: wrap;
+}
+
+/* ── Responsive ── */
+@media (max-width: 560px) {
+  .goods-action-grid {
+    grid-template-columns: 1fr;
+  }
+}

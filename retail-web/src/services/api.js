@@ -22,10 +22,14 @@ api.interceptors.request.use(
 );
 
 // Response interceptor — handle 401 (expired/invalid token)
+// Skip auth endpoints so the login page can handle its own errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url || '';
+    const isAuthEndpoint = requestUrl.includes('/api/auth/');
+
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('role');

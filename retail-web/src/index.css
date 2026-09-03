@@ -79,6 +79,35 @@
     --accent-danger-bg: rgba(239, 68, 68, 0.12);
     --accent-info-bg: rgba(6, 182, 212, 0.15);
   }
+
+  /* ──────────────────────────────────────────
+   Light Theme Class Overrides
+   ────────────────────────────────────────── */
+  .light {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f1f5f9;
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+
+    --border-color: #e2e8f0;
+    --border-light: #cbd5e1;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+    --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.35);
+
+    --accent-primary-hover: #4f46e5;
+    --accent-success-bg: rgba(16, 185, 129, 0.15);
+    --accent-warning-bg: rgba(245, 158, 11, 0.15);
+    --accent-danger-bg: rgba(239, 68, 68, 0.12);
+    --accent-info-bg: rgba(6, 182, 212, 0.15);
+  }
 }
 
 /* ──────────────────────────────────────────

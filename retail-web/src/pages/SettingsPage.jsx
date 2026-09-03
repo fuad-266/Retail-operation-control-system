@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { settingsService } from '../services/endpoints';
 import {
+    Sun, Moon,
     Settings,
     DollarSign,
     Receipt,
@@ -14,6 +15,20 @@ import {
 
 export default function SettingsPage() {
     const { refreshRate, exchangeRate } = useAuth();
+    const [theme, setTheme] = useState(() => {
+        const stored = localStorage.getItem('theme');
+        if (stored) return stored;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    });
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        document.documentElement.classList.toggle('light', theme === 'light');
+    }, [theme]);
+    const toggleTheme = () => {
+        const newTheme = theme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+    };
 
     // ─── Exchange Rate ──────────────────────
     const [newRate, setNewRate] = useState('');
@@ -65,10 +80,15 @@ export default function SettingsPage() {
         }
     };
 
-    const previewEtb = newRate ? `1 KES = ${newRate} ETB` : '';
+    const previewEtb = newRate ? `1 KES = ${(1 / parseFloat(newRate)).toFixed(2)} ETB` : '';
 
     return (
         <div className="settings-page" id="settings-page">
+            <div className="theme-toggle" style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+                <button className="btn btn-outline" onClick={toggleTheme} id="theme-toggle-btn">
+                    {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                </button>
+            </div>
             <div className="page-header">
                 <h1><Settings size={24} /> Settings</h1>
             </div>
@@ -83,7 +103,7 @@ export default function SettingsPage() {
                             <label>Current Rate</label>
                             <p className="setting-value">
                                 {exchangeRate
-                                    ? `1 KES = ${exchangeRate.rate} ETB`
+                                    ? `${exchangeRate.rate} KES = 1 ETB`
                                     : 'Not configured'}
                             </p>
                             {exchangeRate && (
@@ -135,7 +155,7 @@ export default function SettingsPage() {
                                     <tbody>
                                         {rateHistory.slice(0, 10).map((r, i) => (
                                             <tr key={r.id} className={i === 0 ? 'row-active' : ''}>
-                                                <td>1 KES = {r.rate} ETB</td>
+                                                <td>{r.rate} KES = 1 ETB</td>
                                                 <td>{r.setByName}</td>
                                                 <td>{new Date(r.createdAt).toLocaleString()}</td>
                                             </tr>

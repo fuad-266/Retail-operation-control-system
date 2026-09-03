@@ -69,3 +69,14 @@ export const reportService = {
     sellers: () => api.get('/api/reports/sellers'),
     inventory: () => api.get('/api/reports/inventory'),
 };
+
+// ─── Uploads ─────────────────────────────
+export const uploadService = {
+    productImage: (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post('/api/uploads/product-image', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+    },
+};

@@ -12,4 +12,5 @@ import org.springframework.stereotype.Component;
 public class UploadProperties {
 
     private String screenshotsDir;
+    private String productImagesDir;
 }

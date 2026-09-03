@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { productService } from '../services/endpoints';
+import { productService, uploadService } from '../services/endpoints';
 import {
     Plus,
     Edit3,
@@ -9,6 +9,8 @@ import {
     Search,
     X,
     Package,
+    Upload,
+    Image as ImageIcon,
 } from 'lucide-react';
 
 export default function ProductsPage() {
@@ -23,6 +25,10 @@ export default function ProductsPage() {
         buyingPrice: '', price: '',
         stockQuantity: '', minStockAlert: '', imageUrl: '',
     });
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState('');
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef(null);
     const [formError, setFormError] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
@@ -47,6 +53,8 @@ export default function ProductsPage() {
     const openAdd = () => {
         setEditingProduct(null);
         setFormData({ name: '', category: '', description: '', buyingPrice: '', price: '', stockQuantity: '', minStockAlert: '', imageUrl: '' });
+        setImageFile(null);
+        setImagePreview('');
         setFormError('');
         setModalOpen(true);
     };
@@ -63,8 +71,40 @@ export default function ProductsPage() {
             minStockAlert: p.minStockAlert,
             imageUrl: p.imageUrl || '',
         });
+        setImageFile(null);
+        setImagePreview(p.imageUrl ? `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}${p.imageUrl}` : '');
         setFormError('');
         setModalOpen(true);
+    };
+
+    const handleImageSelect = (file) => {
+        if (!file) return;
+        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (!allowed.includes(file.type)) {
+            setFormError('Invalid image type. Use JPG, PNG, WebP, or GIF.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setFormError('Image too large. Max 5 MB.');
+            return;
+        }
+        setImageFile(file);
+        setImagePreview(URL.createObjectURL(file));
+        setFormError('');
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const file = e.dataTransfer.files[0];
+        if (file) handleImageSelect(file);
+    };
+
+    const removeImage = () => {
+        setImageFile(null);
+        setImagePreview('');
+        setFormData({ ...formData, imageUrl: '' });
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleSubmit = async (e) => {
@@ -72,18 +112,28 @@ export default function ProductsPage() {
         setFormError('');
         setSubmitting(true);
 
-        const payload = {
-            name: formData.name,
-            category: formData.category,
-            description: formData.description,
-            price: parseFloat(formData.price),
-            buyingPrice: formData.buyingPrice ? parseFloat(formData.buyingPrice) : null,
-            stockQuantity: parseInt(formData.stockQuantity, 10),
-            minStockAlert: parseInt(formData.minStockAlert, 10) || 0,
-            imageUrl: formData.imageUrl || null,
-        };
-
         try {
+            let finalImageUrl = formData.imageUrl || null;
+
+            // Upload new image if one was selected
+            if (imageFile) {
+                setUploading(true);
+                const uploadRes = await uploadService.productImage(imageFile);
+                finalImageUrl = uploadRes.data.imageUrl;
+                setUploading(false);
+            }
+
+            const payload = {
+                name: formData.name,
+                category: formData.category,
+                description: formData.description,
+                price: parseFloat(formData.price),
+                buyingPrice: formData.buyingPrice ? parseFloat(formData.buyingPrice) : null,
+                stockQuantity: parseInt(formData.stockQuantity, 10),
+                minStockAlert: parseInt(formData.minStockAlert, 10) || 0,
+                imageUrl: finalImageUrl,
+            };
+
             if (editingProduct) {
                 await productService.update(editingProduct.id, payload);
             } else {
@@ -92,6 +142,7 @@ export default function ProductsPage() {
             setModalOpen(false);
             fetchProducts();
         } catch (err) {
+            setUploading(false);
             setFormError(err.response?.data?.message || 'Failed to save product');
         } finally {
             setSubmitting(false);
@@ -266,15 +317,48 @@ export default function ProductsPage() {
                             </div>
 
                             <div className="form-group">
-                                <label htmlFor="prod-image">Image URL</label>
-                                <input id="prod-image" value={formData.imageUrl}
-                                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} />
+                                <label>Product Image</label>
+                                <div
+                                    className="image-upload-area"
+                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                    onDrop={handleDrop}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    id="image-upload-area"
+                                >
+                                    {imagePreview ? (
+                                        <div className="image-preview-container">
+                                            <img src={imagePreview} alt="Preview" className="image-preview" />
+                                            <button
+                                                type="button"
+                                                className="btn-icon image-remove-btn"
+                                                onClick={(e) => { e.stopPropagation(); removeImage(); }}
+                                                title="Remove image"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="image-upload-placeholder">
+                                            <Upload size={32} />
+                                            <p>Click or drag an image here</p>
+                                            <small>JPG, PNG, WebP, GIF — max 5 MB</small>
+                                        </div>
+                                    )}
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/gif"
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => handleImageSelect(e.target.files[0])}
+                                        id="prod-image-input"
+                                    />
+                                </div>
                             </div>
 
                             <div className="modal-actions">
                                 <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary" disabled={submitting} id="product-save-btn">
-                                    {submitting ? 'Saving…' : editingProduct ? 'Update Product' : 'Add Product'}
+                                <button type="submit" className="btn btn-primary" disabled={submitting || uploading} id="product-save-btn">
+                                    {uploading ? 'Uploading image…' : submitting ? 'Saving…' : editingProduct ? 'Update Product' : 'Add Product'}
                                 </button>
                             </div>
                         </form>

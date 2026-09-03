@@ -2,7 +2,7 @@ import axios from 'axios'
 import * as SecureStore from 'expo-secure-store'
 import { triggerGlobalLogout } from '../context/AuthContext'
 
-const API_BASE_URL = 'http://10.216.177.228:8080/api' // Your backend running on this computer
+const API_BASE_URL = 'http://192.168.1.10:8080/api' // Your backend running on this computer
 
 const api = axios.create({
   baseURL: API_BASE_URL,

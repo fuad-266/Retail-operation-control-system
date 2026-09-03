@@ -368,11 +368,11 @@ public class OnlineOrderService {
     }
 
     private String buildPaymentInstructions() {
-        String bank = shopSettingRepository.findBySettingKey("payment_bank_account")
-                .map(ShopSetting::getSettingValue).orElse("");
+        String bankAccounts = shopSettingRepository.findBySettingKey("payment_bank_accounts")
+                .map(ShopSetting::getSettingValue).orElse("[]");
         String mobile = shopSettingRepository.findBySettingKey("payment_mobile_money")
                 .map(ShopSetting::getSettingValue).orElse("");
-        return "Bank Account: " + bank + " | Mobile Money: " + mobile;
+        return "Bank Accounts: " + bankAccounts + " | Mobile Money: " + mobile;
     }
 
     private OnlineOrder getOrderOrThrow(UUID orderId) {

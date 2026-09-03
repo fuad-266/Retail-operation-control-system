@@ -11,6 +11,9 @@ import {
     RefreshCw,
     AlertTriangle,
     CreditCard,
+    Plus,
+    Trash2,
+    Building2,
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -41,9 +44,21 @@ export default function SettingsPage() {
     const [settingsLoading, setSettingsLoading] = useState(true);
     const [settingsMsg, setSettingsMsg] = useState({ type: '', text: '' });
 
+    // ─── Bank Accounts (multiple) ───────────
+    const [bankAccounts, setBankAccounts] = useState([]);
+
     useEffect(() => {
         settingsService.getAll()
-            .then(res => setShopSettings(res.data))
+            .then(res => {
+                setShopSettings(res.data);
+                // Parse bank accounts from JSON string
+                try {
+                    const accounts = JSON.parse(res.data.payment_bank_accounts || '[]');
+                    setBankAccounts(Array.isArray(accounts) ? accounts : []);
+                } catch {
+                    setBankAccounts([]);
+                }
+            })
             .catch(() => { })
             .finally(() => setSettingsLoading(false));
 
@@ -73,11 +88,30 @@ export default function SettingsPage() {
     const handleSaveSettings = async () => {
         setSettingsMsg({ type: '', text: '' });
         try {
-            await settingsService.update(shopSettings);
+            // Serialize bank accounts to JSON before saving
+            const settingsToSave = {
+                ...shopSettings,
+                payment_bank_accounts: JSON.stringify(bankAccounts),
+            };
+            await settingsService.update(settingsToSave);
             setSettingsMsg({ type: 'success', text: 'Settings saved!' });
         } catch (err) {
             setSettingsMsg({ type: 'error', text: err.response?.data?.message || 'Failed to save settings.' });
         }
+    };
+
+    const addBankAccount = () => {
+        setBankAccounts([...bankAccounts, { bankName: '', accountName: '', accountNumber: '' }]);
+    };
+
+    const removeBankAccount = (index) => {
+        setBankAccounts(bankAccounts.filter((_, i) => i !== index));
+    };
+
+    const updateBankAccount = (index, field, value) => {
+        const updated = [...bankAccounts];
+        updated[index] = { ...updated[index], [field]: value };
+        setBankAccounts(updated);
     };
 
     const previewEtb = newRate ? `1 KES = ${(1 / parseFloat(newRate)).toFixed(2)} ETB` : '';
@@ -190,16 +224,84 @@ export default function SettingsPage() {
 
                     <h2><CreditCard size={20} /> Payment Instructions</h2>
 
+                    {/* ─── Multiple Bank Accounts ─── */}
                     <div className="setting-card">
-                        <div className="form-group">
-                            <label htmlFor="bank-account">Bank Account</label>
-                            <input
-                                id="bank-account"
-                                value={shopSettings.payment_bank_account || ''}
-                                onChange={(e) => setShopSettings({ ...shopSettings, payment_bank_account: e.target.value })}
-                                placeholder="Enter bank account details"
-                            />
+                        <div className="setting-row" style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Building2 size={16} /> Bank Accounts
+                            </label>
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                onClick={addBankAccount}
+                                id="add-bank-btn"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}
+                            >
+                                <Plus size={14} /> Add Bank
+                            </button>
                         </div>
+
+                        {bankAccounts.length === 0 && (
+                            <div style={{ textAlign: 'center', padding: '1.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.9rem', opacity: 0.7 }}>
+                                No bank accounts configured. Click "Add Bank" to add one.
+                            </div>
+                        )}
+
+                        {bankAccounts.map((account, index) => (
+                            <div key={index} className="bank-account-entry" style={{
+                                border: '1px solid var(--border)',
+                                borderRadius: '0.75rem',
+                                padding: '1rem',
+                                marginBottom: '0.75rem',
+                                position: 'relative',
+                                background: 'var(--bg-secondary, #f8f9fa)',
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+                                        Bank #{index + 1}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline"
+                                        onClick={() => removeBankAccount(index)}
+                                        style={{ color: '#ef4444', borderColor: '#fca5a5', padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                                        id={`remove-bank-${index}`}
+                                    >
+                                        <Trash2 size={13} />
+                                    </button>
+                                </div>
+                                <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+                                    <label htmlFor={`bank-name-${index}`} style={{ fontSize: '0.82rem' }}>Bank Name</label>
+                                    <input
+                                        id={`bank-name-${index}`}
+                                        value={account.bankName || ''}
+                                        onChange={(e) => updateBankAccount(index, 'bankName', e.target.value)}
+                                        placeholder="e.g. Commercial Bank of Ethiopia"
+                                    />
+                                </div>
+                                <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+                                    <label htmlFor={`account-name-${index}`} style={{ fontSize: '0.82rem' }}>Account Name</label>
+                                    <input
+                                        id={`account-name-${index}`}
+                                        value={account.accountName || ''}
+                                        onChange={(e) => updateBankAccount(index, 'accountName', e.target.value)}
+                                        placeholder="e.g. Adama Shop Ltd"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor={`account-number-${index}`} style={{ fontSize: '0.82rem' }}>Account Number</label>
+                                    <input
+                                        id={`account-number-${index}`}
+                                        value={account.accountNumber || ''}
+                                        onChange={(e) => updateBankAccount(index, 'accountNumber', e.target.value)}
+                                        placeholder="e.g. 1000123456789"
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="setting-card">
                         <div className="form-group">
                             <label htmlFor="mobile-money">Mobile Money Number</label>
                             <input

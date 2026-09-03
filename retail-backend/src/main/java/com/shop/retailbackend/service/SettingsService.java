@@ -89,6 +89,17 @@ public class SettingsService {
         });
     }
 
+    // ── Payment Info (public for authenticated users) ───────────────────
+
+    public Map<String, String> getPaymentInfo() {
+        Map<String, String> info = new java.util.HashMap<>();
+        info.put("bankAccounts", shopSettingRepository.findBySettingKey("payment_bank_accounts")
+                .map(ShopSetting::getSettingValue).orElse("[]"));
+        info.put("mobileMoney", shopSettingRepository.findBySettingKey("payment_mobile_money")
+                .map(ShopSetting::getSettingValue).orElse(""));
+        return info;
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private ExchangeRateDto toRateDto(ExchangeRateSetting r, boolean stale) {

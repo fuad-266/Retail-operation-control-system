@@ -50,6 +50,9 @@ export const ordersService = {
   getOrder: (id: string) =>
     api.get<OnlineOrderDto>(`/mobile/orders/${id}`).then((r) => r.data),
 
+  getPaymentInfo: () =>
+    api.get<{ bankAccounts: string; mobileMoney: string }>('/settings/payment-info').then((r) => r.data),
+
   submitPayment: (orderId: string, screenshot: any, paymentReference?: string) => {
     const formData = new FormData()
     formData.append('screenshot', screenshot)

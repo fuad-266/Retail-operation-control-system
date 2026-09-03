@@ -22,7 +22,7 @@ public class ShopSetting {
     @Column(name = "setting_key", unique = true, nullable = false)
     private String settingKey;
 
-    @Column(name = "setting_value", nullable = false)
+    @Column(name = "setting_value", nullable = false, columnDefinition = "TEXT")
     private String settingValue;
 
     @ManyToOne(fetch = FetchType.LAZY)

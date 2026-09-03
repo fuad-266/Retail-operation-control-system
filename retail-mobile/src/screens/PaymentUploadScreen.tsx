@@ -27,6 +27,12 @@ type PaymentUploadScreenRouteProp = {
   params: { orderId: string }
 }
 
+interface BankAccount {
+  bankName: string
+  accountName: string
+  accountNumber: string
+}
+
 export default function PaymentUploadScreen() {
   const navigation = useNavigation<PaymentUploadScreenNavigationProp>()
   const route = useRoute<PaymentUploadScreenRouteProp>()
@@ -40,6 +46,23 @@ export default function PaymentUploadScreen() {
     queryKey: ['order', orderId],
     queryFn: () => ordersService.getOrder(orderId),
   })
+
+  // Fetch payment info (bank accounts + mobile money) from settings
+  const { data: paymentInfo } = useQuery({
+    queryKey: ['paymentInfo'],
+    queryFn: () => ordersService.getPaymentInfo(),
+  })
+
+  // Parse bank accounts from settings JSON string
+  const bankAccounts: BankAccount[] = React.useMemo(() => {
+    if (!paymentInfo?.bankAccounts) return []
+    try {
+      const parsed = JSON.parse(paymentInfo.bankAccounts)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }, [paymentInfo])
 
   const uploadPaymentMutation = useMutation({
     mutationFn: ({ screenshot, reference }: { screenshot: any; reference?: string }) =>
@@ -169,7 +192,7 @@ export default function PaymentUploadScreen() {
             {[
               'Go to M-PESA menu on your phone',
               'Select "Lipa na M-PESA" → "Paybill"',
-              { text: 'Business Number: ', bold: '123456' },
+              { text: 'Business Number: ', bold: paymentInfo?.mobileMoney || '—' },
               { text: 'Account Number: ', bold: orderId.slice(0, 8) },
               { text: 'Amount: ', bold: `KES ${order?.totalAmount.toLocaleString()}` },
               'Enter your M-PESA PIN and confirm',
@@ -190,25 +213,44 @@ export default function PaymentUploadScreen() {
           </View>
         </View>
 
-        {/* Bank Transfer */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Feather name="credit-card" size={18} color="#E8601C" style={{ marginRight: 8 }} />
-            <Text style={styles.cardTitle}>Bank Transfer</Text>
+        {/* Bank Transfer — Dynamic from settings */}
+        {bankAccounts.length > 0 && bankAccounts.map((bank, bankIndex) => (
+          <View key={bankIndex} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Feather name="credit-card" size={18} color="#E8601C" style={{ marginRight: 8 }} />
+              <Text style={styles.cardTitle}>
+                {bank.bankName || `Bank ${bankIndex + 1}`}
+              </Text>
+            </View>
+            <View style={styles.bankDetails}>
+              {[
+                { label: 'Bank', value: bank.bankName || '—' },
+                { label: 'Account Name', value: bank.accountName || '—' },
+                { label: 'Account Number', value: bank.accountNumber || '—' },
+              ].map((detail, i) => (
+                <View key={i} style={styles.bankRow}>
+                  <Text style={styles.bankLabel}>{detail.label}</Text>
+                  <Text style={styles.bankValue}>{detail.value}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-          <View style={styles.bankDetails}>
-            {[
-              { label: 'Bank', value: 'Kenya Commercial Bank' },
-              { label: 'Account Name', value: 'Retail Shop Ltd' },
-              { label: 'Account Number', value: '1234567890' },
-            ].map((detail, i) => (
-              <View key={i} style={styles.bankRow}>
-                <Text style={styles.bankLabel}>{detail.label}</Text>
-                <Text style={styles.bankValue}>{detail.value}</Text>
-              </View>
-            ))}
+        ))}
+
+        {/* Fallback if no bank accounts configured */}
+        {bankAccounts.length === 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Feather name="credit-card" size={18} color="#E8601C" style={{ marginRight: 8 }} />
+              <Text style={styles.cardTitle}>Bank Transfer</Text>
+            </View>
+            <View style={styles.bankDetails}>
+              <Text style={{ fontSize: 13, color: '#999', textAlign: 'center', paddingVertical: 8 }}>
+                No bank accounts configured. Contact the shop for bank details.
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Upload Screenshot Card */}
         <View style={styles.card}>

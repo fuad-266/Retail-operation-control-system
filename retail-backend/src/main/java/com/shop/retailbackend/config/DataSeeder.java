@@ -23,7 +23,7 @@ public class DataSeeder implements CommandLineRunner {
     // Default settings to seed if not already present
     private static final Map<String, String> DEFAULTS = Map.of(
             "receipt_show_item_prices", "true",
-            "payment_bank_account", "",
+            "payment_bank_accounts", "[]",
             "payment_mobile_money", "");
 
     @Override

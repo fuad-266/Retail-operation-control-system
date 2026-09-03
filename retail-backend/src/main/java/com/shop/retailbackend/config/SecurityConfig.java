@@ -48,6 +48,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Login is public
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        // Mobile product listing is public (customers browse without auth)
+                        .requestMatchers(HttpMethod.GET, "/api/mobile/products").permitAll()
+                        // Public payment info for mobile checkout
+                        .requestMatchers(HttpMethod.GET, "/api/settings/payment-info").permitAll()
                         // Serve uploaded files publicly
                         .requestMatchers("/uploads/**").permitAll()
                         // Register endpoint must return 404 — handled by no mapping + explicit rule

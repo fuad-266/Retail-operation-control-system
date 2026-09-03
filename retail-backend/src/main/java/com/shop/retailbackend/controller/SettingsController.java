@@ -42,6 +42,11 @@ public class SettingsController {
         return ResponseEntity.ok(settingsService.getAllSettings());
     }
 
+    @GetMapping("/payment-info")
+    public ResponseEntity<Map<String, String>> getPaymentInfo() {
+        return ResponseEntity.ok(settingsService.getPaymentInfo());
+    }
+
     @PutMapping
     public ResponseEntity<Void> updateSettings(@RequestBody Map<String, String> updates,
                                                 Authentication auth) {

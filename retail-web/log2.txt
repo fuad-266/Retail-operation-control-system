@@ -1,0 +1,470 @@
+﻿commit 33b01e5b0371c1c977aa7aeff9b8d0776e4c4ab7
+Author: fuad-266 <fuadabdala266@gmail.com>
+Date:   Thu Sep 3 23:57:42 2026 +0300
+
+     implement shop settings management, online order payment screenshot uploads, and secure API client configuration
+
+diff --git a/retail-web/src/pages/SettingsPage.jsx b/retail-web/src/pages/SettingsPage.jsx
+index 697ad409..1aae6243 100644
+--- a/retail-web/src/pages/SettingsPage.jsx
++++ b/retail-web/src/pages/SettingsPage.jsx
+@@ -11,6 +11,9 @@ import {
+     RefreshCw,
+     AlertTriangle,
+     CreditCard,
++    Plus,
++    Trash2,
++    Building2,
+ } from 'lucide-react';
+ 
+ export default function SettingsPage() {
+@@ -41,9 +44,21 @@ export default function SettingsPage() {
+     const [settingsLoading, setSettingsLoading] = useState(true);
+     const [settingsMsg, setSettingsMsg] = useState({ type: '', text: '' });
+ 
++    // ΓöÇΓöÇΓöÇ Bank Accounts (multiple) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++    const [bankAccounts, setBankAccounts] = useState([]);
++
+     useEffect(() => {
+         settingsService.getAll()
+-            .then(res => setShopSettings(res.data))
++            .then(res => {
++                setShopSettings(res.data);
++                // Parse bank accounts from JSON string
++                try {
++                    const accounts = JSON.parse(res.data.payment_bank_accounts || '[]');
++                    setBankAccounts(Array.isArray(accounts) ? accounts : []);
++                } catch {
++                    setBankAccounts([]);
++                }
++            })
+             .catch(() => { })
+             .finally(() => setSettingsLoading(false));
+ 
+@@ -73,13 +88,32 @@ export default function SettingsPage() {
+     const handleSaveSettings = async () => {
+         setSettingsMsg({ type: '', text: '' });
+         try {
+-            await settingsService.update(shopSettings);
++            // Serialize bank accounts to JSON before saving
++            const settingsToSave = {
++                ...shopSettings,
++                payment_bank_accounts: JSON.stringify(bankAccounts),
++            };
++            await settingsService.update(settingsToSave);
+             setSettingsMsg({ type: 'success', text: 'Settings saved!' });
+         } catch (err) {
+             setSettingsMsg({ type: 'error', text: err.response?.data?.message || 'Failed to save settings.' });
+         }
+     };
+ 
++    const addBankAccount = () => {
++        setBankAccounts([...bankAccounts, { bankName: '', accountName: '', accountNumber: '' }]);
++    };
++
++    const removeBankAccount = (index) => {
++        setBankAccounts(bankAccounts.filter((_, i) => i !== index));
++    };
++
++    const updateBankAccount = (index, field, value) => {
++        const updated = [...bankAccounts];
++        updated[index] = { ...updated[index], [field]: value };
++        setBankAccounts(updated);
++    };
++
+     const previewEtb = newRate ? `1 KES = ${(1 / parseFloat(newRate)).toFixed(2)} ETB` : '';
+ 
+     return (
+@@ -190,16 +224,84 @@ export default function SettingsPage() {
+ 
+                     <h2><CreditCard size={20} /> Payment Instructions</h2>
+ 
++                    {/* ΓöÇΓöÇΓöÇ Multiple Bank Accounts ΓöÇΓöÇΓöÇ */}
+                     <div className="setting-card">
+-                        <div className="form-group">
+-                            <label htmlFor="bank-account">Bank Account</label>
+-                            <input
+-                                id="bank-account"
+-                                value={shopSettings.payment_bank_account || ''}
+-                                onChange={(e) => setShopSettings({ ...shopSettings, payment_bank_account: e.target.value })}
+-                                placeholder="Enter bank account details"
+-                            />
++                        <div className="setting-row" style={{ marginBottom: '1rem' }}>
++                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
++                                <Building2 size={16} /> Bank Accounts
++                            </label>
++                            <button
++                                type="button"
++                                className="btn btn-outline"
++                                onClick={addBankAccount}
++                                id="add-bank-btn"
++                                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}
++                            >
++                                <Plus size={14} /> Add Bank
++                            </button>
+                         </div>
++
++                        {bankAccounts.length === 0 && (
++                            <div style={{ textAlign: 'center', padding: '1.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.9rem', opacity: 0.7 }}>
++                                No bank accounts configured. Click "Add Bank" to add one.
++                            </div>
++                        )}
++
++                        {bankAccounts.map((account, index) => (
++                            <div key={index} className="bank-account-entry" style={{
++                                border: '1px solid var(--border)',
++                                borderRadius: '0.75rem',
++                                padding: '1rem',
++                                marginBottom: '0.75rem',
++                                position: 'relative',
++                                background: 'var(--bg-secondary, #f8f9fa)',
++                            }}>
++                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
++                                    <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>
++                                        Bank #{index + 1}
++                                    </span>
++                                    <button
++                                        type="button"
++                                        className="btn btn-outline"
++                                        onClick={() => removeBankAccount(index)}
++                                        style={{ color: '#ef4444', borderColor: '#fca5a5', padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
++                                        id={`remove-bank-${index}`}
++                                    >
++                                        <Trash2 size={13} />
++                                    </button>
++                                </div>
++                                <div className="form-group" style={{ marginBottom: '0.5rem' }}>
++                                    <label htmlFor={`bank-name-${index}`} style={{ fontSize: '0.82rem' }}>Bank Name</label>
++                                    <input
++                                        id={`bank-name-${index}`}
++                                        value={account.bankName || ''}
++                                        onChange={(e) => updateBankAccount(index, 'bankName', e.target.value)}
++                                        placeholder="e.g. Commercial Bank of Ethiopia"
++                                    />
++                                </div>
++                                <div className="form-group" style={{ marginBottom: '0.5rem' }}>
++                                    <label htmlFor={`account-name-${index}`} style={{ fontSize: '0.82rem' }}>Account Name</label>
++                                    <input
++                                        id={`account-name-${index}`}
++                                        value={account.accountName || ''}
++                                        onChange={(e) => updateBankAccount(index, 'accountName', e.target.value)}
++                                        placeholder="e.g. Adama Shop Ltd"
++                                    />
++                                </div>
++                                <div className="form-group">
++                                    <label htmlFor={`account-number-${index}`} style={{ fontSize: '0.82rem' }}>Account Number</label>
++                                    <input
++                                        id={`account-number-${index}`}
++                                        value={account.accountNumber || ''}
++                                        onChange={(e) => updateBankAccount(index, 'accountNumber', e.target.value)}
++                                        placeholder="e.g. 1000123456789"
++                                    />
++                                </div>
++                            </div>
++                        ))}
++                    </div>
++
++                    <div className="setting-card">
+                         <div className="form-group">
+                             <label htmlFor="mobile-money">Mobile Money Number</label>
+                             <input
+
+commit 06aa0e5c493c3b79972a8c89e5b2d56ae3390788
+Author: fuad-266 <fuadabdala266@gmail.com>
+Date:   Thu Sep 3 19:01:36 2026 +0300
+
+    add global CSS variables and create SettingsPage component
+
+diff --git a/retail-web/src/pages/SettingsPage.jsx b/retail-web/src/pages/SettingsPage.jsx
+index 477a9722..697ad409 100644
+--- a/retail-web/src/pages/SettingsPage.jsx
++++ b/retail-web/src/pages/SettingsPage.jsx
+@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
+ import { useAuth } from '../context/AuthContext';
+ import { settingsService } from '../services/endpoints';
+ import {
++    Sun, Moon,
+     Settings,
+     DollarSign,
+     Receipt,
+@@ -14,6 +15,20 @@ import {
+ 
+ export default function SettingsPage() {
+     const { refreshRate, exchangeRate } = useAuth();
++    const [theme, setTheme] = useState(() => {
++        const stored = localStorage.getItem('theme');
++        if (stored) return stored;
++        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
++    });
++    useEffect(() => {
++        document.documentElement.classList.toggle('dark', theme === 'dark');
++        document.documentElement.classList.toggle('light', theme === 'light');
++    }, [theme]);
++    const toggleTheme = () => {
++        const newTheme = theme === 'dark' ? 'light' : 'dark';
++        setTheme(newTheme);
++        localStorage.setItem('theme', newTheme);
++    };
+ 
+     // ΓöÇΓöÇΓöÇ Exchange Rate ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+     const [newRate, setNewRate] = useState('');
+@@ -65,10 +80,15 @@ export default function SettingsPage() {
+         }
+     };
+ 
+-    const previewEtb = newRate ? `1 KES = ${newRate} ETB` : '';
++    const previewEtb = newRate ? `1 KES = ${(1 / parseFloat(newRate)).toFixed(2)} ETB` : '';
+ 
+     return (
+         <div className="settings-page" id="settings-page">
++            <div className="theme-toggle" style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
++                <button className="btn btn-outline" onClick={toggleTheme} id="theme-toggle-btn">
++                    {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
++                </button>
++            </div>
+             <div className="page-header">
+                 <h1><Settings size={24} /> Settings</h1>
+             </div>
+@@ -83,7 +103,7 @@ export default function SettingsPage() {
+                             <label>Current Rate</label>
+                             <p className="setting-value">
+                                 {exchangeRate
+-                                    ? `1 KES = ${exchangeRate.rate} ETB`
++                                    ? `${exchangeRate.rate} KES = 1 ETB`
+                                     : 'Not configured'}
+                             </p>
+                             {exchangeRate && (
+@@ -135,7 +155,7 @@ export default function SettingsPage() {
+                                     <tbody>
+                                         {rateHistory.slice(0, 10).map((r, i) => (
+                                             <tr key={r.id} className={i === 0 ? 'row-active' : ''}>
+-                                                <td>1 KES = {r.rate} ETB</td>
++                                                <td>{r.rate} KES = 1 ETB</td>
+                                                 <td>{r.setByName}</td>
+                                                 <td>{new Date(r.createdAt).toLocaleString()}</td>
+                                             </tr>
+
+commit 87ed75b79078e242e6218dbcd14a074d20c949b5
+Author: fuad-266 <fuadabdala266@gmail.com>
+Date:   Sat Jul 25 11:18:06 2026 +0300
+
+    implement core administrative and dashboard pages including user management, reporting, and access control views
+
+diff --git a/retail-web/src/pages/SettingsPage.jsx b/retail-web/src/pages/SettingsPage.jsx
+new file mode 100644
+index 00000000..477a9722
+--- /dev/null
++++ b/retail-web/src/pages/SettingsPage.jsx
+@@ -0,0 +1,212 @@
++import { useEffect, useState } from 'react';
++import { useAuth } from '../context/AuthContext';
++import { settingsService } from '../services/endpoints';
++import {
++    Settings,
++    DollarSign,
++    Receipt,
++    Clock,
++    Save,
++    RefreshCw,
++    AlertTriangle,
++    CreditCard,
++} from 'lucide-react';
++
++export default function SettingsPage() {
++    const { refreshRate, exchangeRate } = useAuth();
++
++    // ΓöÇΓöÇΓöÇ Exchange Rate ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++    const [newRate, setNewRate] = useState('');
++    const [rateHistory, setRateHistory] = useState([]);
++    const [rateLoading, setRateLoading] = useState(false);
++    const [rateMsg, setRateMsg] = useState({ type: '', text: '' });
++
++    // ΓöÇΓöÇΓöÇ Shop Settings ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++    const [shopSettings, setShopSettings] = useState({});
++    const [settingsLoading, setSettingsLoading] = useState(true);
++    const [settingsMsg, setSettingsMsg] = useState({ type: '', text: '' });
++
++    useEffect(() => {
++        settingsService.getAll()
++            .then(res => setShopSettings(res.data))
++            .catch(() => { })
++            .finally(() => setSettingsLoading(false));
++
++        settingsService.getRateHistory()
++            .then(res => setRateHistory(res.data))
++            .catch(() => { });
++    }, []);
++
++    const handleSetRate = async (e) => {
++        e.preventDefault();
++        setRateLoading(true);
++        setRateMsg({ type: '', text: '' });
++
++        try {
++            await settingsService.setRate({ rate: parseFloat(newRate) });
++            setRateMsg({ type: 'success', text: 'Exchange rate updated!' });
++            setNewRate('');
++            refreshRate();
++            settingsService.getRateHistory().then(res => setRateHistory(res.data)).catch(() => { });
++        } catch (err) {
++            setRateMsg({ type: 'error', text: err.response?.data?.message || 'Failed to set rate.' });
++        } finally {
++            setRateLoading(false);
++        }
++    };
++
++    const handleSaveSettings = async () => {
++        setSettingsMsg({ type: '', text: '' });
++        try {
++            await settingsService.update(shopSettings);
++            setSettingsMsg({ type: 'success', text: 'Settings saved!' });
++        } catch (err) {
++            setSettingsMsg({ type: 'error', text: err.response?.data?.message || 'Failed to save settings.' });
++        }
++    };
++
++    const previewEtb = newRate ? `1 KES = ${newRate} ETB` : '';
++
++    return (
++        <div className="settings-page" id="settings-page">
++            <div className="page-header">
++                <h1><Settings size={24} /> Settings</h1>
++            </div>
++
++            <div className="settings-grid">
++                {/* ΓöÇΓöÇΓöÇ Currency / Exchange Rate ΓöÇΓöÇΓöÇ */}
++                <div className="settings-section">
++                    <h2><DollarSign size={20} /> Currency Settings</h2>
++
++                    <div className="setting-card">
++                        <div className="setting-info">
++                            <label>Current Rate</label>
++                            <p className="setting-value">
++                                {exchangeRate
++                                    ? `1 KES = ${exchangeRate.rate} ETB`
++                                    : 'Not configured'}
++                            </p>
++                            {exchangeRate && (
++                                <small className="text-muted">
++                                    Last updated: {new Date(exchangeRate.createdAt).toLocaleString()}
++                                </small>
++                            )}
++                            {exchangeRate?.staleRateWarning && (
++                                <div className="inline-warning">
++                                    <AlertTriangle size={14} /> Rate is stale (over 24 hours old)
++                                </div>
++                            )}
++                        </div>
++
++                        <form onSubmit={handleSetRate} className="rate-form">
++                            <div className="form-row compact">
++                                <input
++                                    type="number"
++                                    step="0.0001"
++                                    min="0.0001"
++                                    placeholder="New rate"
++                                    value={newRate}
++                                    onChange={(e) => setNewRate(e.target.value)}
++                                    required
++                                    id="new-rate-input"
++                                />
++                                <button type="submit" className="btn btn-primary" disabled={rateLoading} id="update-rate-btn">
++                                    {rateLoading ? 'UpdatingΓÇª' : 'Update Rate'}
++                                </button>
++                            </div>
++                            {previewEtb && <p className="rate-preview">Preview: {previewEtb}</p>}
++                            {rateMsg.text && <div className={`alert alert-${rateMsg.type} compact`}>{rateMsg.text}</div>}
++                        </form>
++                    </div>
++
++                    {/* Rate History */}
++                    {rateHistory.length > 0 && (
++                        <div className="setting-card">
++                            <h3>Rate History</h3>
++                            <div className="table-wrapper compact">
++                                <table className="data-table compact">
++                                    <thead>
++                                        <tr>
++                                            <th>Rate</th>
++                                            <th>Set By</th>
++                                            <th>Date</th>
++                                        </tr>
++                                    </thead>
++                                    <tbody>
++                                        {rateHistory.slice(0, 10).map((r, i) => (
++                                            <tr key={r.id} className={i === 0 ? 'row-active' : ''}>
++                                                <td>1 KES = {r.rate} ETB</td>
++                                                <td>{r.setByName}</td>
++                                                <td>{new Date(r.createdAt).toLocaleString()}</td>
++                                            </tr>
++                                        ))}
++                                    </tbody>
++                                </table>
++                            </div>
++                        </div>
++                    )}
++                </div>
++
++                {/* ΓöÇΓöÇΓöÇ Receipt & Payment Settings ΓöÇΓöÇΓöÇ */}
++                <div className="settings-section">
++                    <h2><Receipt size={20} /> Receipt Settings</h2>
++
++                    <div className="setting-card">
++                        <div className="setting-row">
++                            <label>Show item prices on receipts</label>
++                            <button
++                                className={`toggle-switch ${shopSettings.receipt_show_item_prices === 'true' ? 'on' : 'off'}`}
++                                onClick={() => setShopSettings({
++                                    ...shopSettings,
++                                    receipt_show_item_prices: shopSettings.receipt_show_item_prices === 'true' ? 'false' : 'true',
++                                })}
++                                id="receipt-prices-toggle"
++                            >
++                                <span className="toggle-knob" />
++                                <span>{shopSettings.receipt_show_item_prices === 'true' ? 'ON' : 'OFF'}</span>
++                            </button>
++                        </div>
++                    </div>
++
++                    <h2><CreditCard size={20} /> Payment Instructions</h2>
++
++                    <div className="setting-card">
++                        <div className="form-group">
++                            <label htmlFor="bank-account">Bank Account</label>
++                            <input
++                                id="bank-account"
++                                value={shopSettings.payment_bank_account || ''}
++                                onChange={(e) => setShopSettings({ ...shopSettings, payment_bank_account: e.target.value })}
++                                placeholder="Enter bank account details"
++                            />
++                        </div>
++                        <div className="form-group">
++                            <label htmlFor="mobile-money">Mobile Money Number</label>
++                            <input
++                                id="mobile-money"
++                                value={shopSettings.payment_mobile_money || ''}
++                                onChange={(e) => setShopSettings({ ...shopSettings, payment_mobile_money: e.target.value })}
++                                placeholder="Enter mobile money number"
++                            />
++                        </div>
++                    </div>
++
++                    <h2><Clock size={20} /> Reservation Settings</h2>
++
++                    <div className="setting-card">
++                        <div className="setting-row">
++                            <label>Auto-cancel reservations</label>
++                            <span className="setting-fixed">6 hours (fixed)</span>
++                        </div>
++                    </div>
++
++                    {settingsMsg.text && <div className={`alert alert-${settingsMsg.type}`}>{settingsMsg.text}</div>}
++
++                    <button className="btn btn-primary btn-full" onClick={handleSaveSettings} id="save-settings-btn">
++                        <Save size={16} /> Save All Settings
++                    </button>
++                </div>
++            </div>
++        </div>
++    );
++}

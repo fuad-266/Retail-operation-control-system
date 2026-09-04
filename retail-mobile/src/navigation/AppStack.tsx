@@ -34,9 +34,9 @@ export function AppStack() {
   }
 
   return (
-    <Stack.Navigator 
+    <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName={!isAuthenticated ? "Login" : "Home"}
+      initialRouteName={(!isAuthenticated || user?.role !== 'CUSTOMER') ? "Login" : "Home"}
     >
       {!isAuthenticated ? (
         <Stack.Screen name="Login" component={LoginScreen} />

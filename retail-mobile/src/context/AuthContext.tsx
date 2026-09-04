@@ -49,7 +49,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const storedAuth = await SecureStore.getItemAsync('auth')
       if (storedAuth) {
-        setUser(JSON.parse(storedAuth))
+        const parsedUser = JSON.parse(storedAuth)
+        if (parsedUser.role !== 'CUSTOMER') {
+          await SecureStore.deleteItemAsync('auth')
+          setUser(null)
+        } else {
+          setUser(parsedUser)
+        }
       }
     } catch (error) {
       console.error('Error loading stored auth:', error)

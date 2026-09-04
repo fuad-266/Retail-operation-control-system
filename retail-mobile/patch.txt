@@ -1,0 +1,147 @@
+﻿commit 33b01e5b0371c1c977aa7aeff9b8d0776e4c4ab7
+Author: fuad-266 <fuadabdala266@gmail.com>
+Date:   Thu Sep 3 23:57:42 2026 +0300
+
+     implement shop settings management, online order payment screenshot uploads, and secure API client configuration
+
+diff --git a/retail-mobile/src/screens/PaymentUploadScreen.tsx b/retail-mobile/src/screens/PaymentUploadScreen.tsx
+index e8891f27..9e45e989 100644
+--- a/retail-mobile/src/screens/PaymentUploadScreen.tsx
++++ b/retail-mobile/src/screens/PaymentUploadScreen.tsx
+@@ -27,6 +27,12 @@ type PaymentUploadScreenRouteProp = {
+   params: { orderId: string }
+ }
+ 
++interface BankAccount {
++  bankName: string
++  accountName: string
++  accountNumber: string
++}
++
+ export default function PaymentUploadScreen() {
+   const navigation = useNavigation<PaymentUploadScreenNavigationProp>()
+   const route = useRoute<PaymentUploadScreenRouteProp>()
+@@ -41,6 +47,23 @@ export default function PaymentUploadScreen() {
+     queryFn: () => ordersService.getOrder(orderId),
+   })
+ 
++  // Fetch payment info (bank accounts + mobile money) from settings
++  const { data: paymentInfo } = useQuery({
++    queryKey: ['paymentInfo'],
++    queryFn: () => ordersService.getPaymentInfo(),
++  })
++
++  // Parse bank accounts from settings JSON string
++  const bankAccounts: BankAccount[] = React.useMemo(() => {
++    if (!paymentInfo?.bankAccounts) return []
++    try {
++      const parsed = JSON.parse(paymentInfo.bankAccounts)
++      return Array.isArray(parsed) ? parsed : []
++    } catch {
++      return []
++    }
++  }, [paymentInfo])
++
+   const uploadPaymentMutation = useMutation({
+     mutationFn: ({ screenshot, reference }: { screenshot: any; reference?: string }) =>
+       ordersService.submitPayment(orderId, screenshot, reference),
+@@ -169,7 +192,7 @@ export default function PaymentUploadScreen() {
+             {[
+               'Go to M-PESA menu on your phone',
+               'Select "Lipa na M-PESA" ΓåÆ "Paybill"',
+-              { text: 'Business Number: ', bold: '123456' },
++              { text: 'Business Number: ', bold: paymentInfo?.mobileMoney || 'ΓÇö' },
+               { text: 'Account Number: ', bold: orderId.slice(0, 8) },
+               { text: 'Amount: ', bold: `KES ${order?.totalAmount.toLocaleString()}` },
+               'Enter your M-PESA PIN and confirm',
+@@ -190,25 +213,44 @@ export default function PaymentUploadScreen() {
+           </View>
+         </View>
+ 
+-        {/* Bank Transfer */}
+-        <View style={styles.card}>
+-          <View style={styles.cardHeader}>
+-            <Feather name="credit-card" size={18} color="#E8601C" style={{ marginRight: 8 }} />
+-            <Text style={styles.cardTitle}>Bank Transfer</Text>
++        {/* Bank Transfer ΓÇö Dynamic from settings */}
++        {bankAccounts.length > 0 && bankAccounts.map((bank, bankIndex) => (
++          <View key={bankIndex} style={styles.card}>
++            <View style={styles.cardHeader}>
++              <Feather name="credit-card" size={18} color="#E8601C" style={{ marginRight: 8 }} />
++              <Text style={styles.cardTitle}>
++                {bank.bankName || `Bank ${bankIndex + 1}`}
++              </Text>
++            </View>
++            <View style={styles.bankDetails}>
++              {[
++                { label: 'Bank', value: bank.bankName || 'ΓÇö' },
++                { label: 'Account Name', value: bank.accountName || 'ΓÇö' },
++                { label: 'Account Number', value: bank.accountNumber || 'ΓÇö' },
++              ].map((detail, i) => (
++                <View key={i} style={styles.bankRow}>
++                  <Text style={styles.bankLabel}>{detail.label}</Text>
++                  <Text style={styles.bankValue}>{detail.value}</Text>
++                </View>
++              ))}
++            </View>
+           </View>
+-          <View style={styles.bankDetails}>
+-            {[
+-              { label: 'Bank', value: 'Kenya Commercial Bank' },
+-              { label: 'Account Name', value: 'Retail Shop Ltd' },
+-              { label: 'Account Number', value: '1234567890' },
+-            ].map((detail, i) => (
+-              <View key={i} style={styles.bankRow}>
+-                <Text style={styles.bankLabel}>{detail.label}</Text>
+-                <Text style={styles.bankValue}>{detail.value}</Text>
+-              </View>
+-            ))}
++        ))}
++
++        {/* Fallback if no bank accounts configured */}
++        {bankAccounts.length === 0 && (
++          <View style={styles.card}>
++            <View style={styles.cardHeader}>
++              <Feather name="credit-card" size={18} color="#E8601C" style={{ marginRight: 8 }} />
++              <Text style={styles.cardTitle}>Bank Transfer</Text>
++            </View>
++            <View style={styles.bankDetails}>
++              <Text style={{ fontSize: 13, color: '#999', textAlign: 'center', paddingVertical: 8 }}>
++                No bank accounts configured. Contact the shop for bank details.
++              </Text>
++            </View>
+           </View>
+-        </View>
++        )}
+ 
+         {/* Upload Screenshot Card */}
+         <View style={styles.card}>
+diff --git a/retail-mobile/src/services/api.ts b/retail-mobile/src/services/api.ts
+index 50c23f30..fc315a9f 100644
+--- a/retail-mobile/src/services/api.ts
++++ b/retail-mobile/src/services/api.ts
+@@ -2,8 +2,8 @@ import axios from 'axios'
+ import * as SecureStore from 'expo-secure-store'
+ import { triggerGlobalLogout } from '../context/AuthContext'
+ 
+-const API_BASE_URL = 'http://192.168.1.10:8080/api' // Your backend running on this computer
+-export const SERVER_BASE_URL = 'http://192.168.1.10:8080' // Base URL without /api, for images etc.
++const API_BASE_URL = 'http://10.78.243.228:8080/api' // Your backend running on this computer
++export const SERVER_BASE_URL = 'http://10.78.243.228:8080' // Base URL without /api, for images etc.
+ 
+ const api = axios.create({
+   baseURL: API_BASE_URL,
+diff --git a/retail-mobile/src/services/orders.service.ts b/retail-mobile/src/services/orders.service.ts
+index 49282b6c..63c67ace 100644
+--- a/retail-mobile/src/services/orders.service.ts
++++ b/retail-mobile/src/services/orders.service.ts
+@@ -50,6 +50,9 @@ export const ordersService = {
+   getOrder: (id: string) =>
+     api.get<OnlineOrderDto>(`/mobile/orders/${id}`).then((r) => r.data),
+ 
++  getPaymentInfo: () =>
++    api.get<{ bankAccounts: string; mobileMoney: string }>('/settings/payment-info').then((r) => r.data),
++
+   submitPayment: (orderId: string, screenshot: any, paymentReference?: string) => {
+     const formData = new FormData()
+     formData.append('screenshot', screenshot)

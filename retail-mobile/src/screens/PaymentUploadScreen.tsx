@@ -33,6 +33,11 @@ interface BankAccount {
   accountNumber: string
 }
 
+interface MobileMoneyAccount {
+  walletName: string
+  phoneNumber: string
+}
+
 export default function PaymentUploadScreen() {
   const navigation = useNavigation<PaymentUploadScreenNavigationProp>()
   const route = useRoute<PaymentUploadScreenRouteProp>()
@@ -58,6 +63,17 @@ export default function PaymentUploadScreen() {
     if (!paymentInfo?.bankAccounts) return []
     try {
       const parsed = JSON.parse(paymentInfo.bankAccounts)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }, [paymentInfo])
+
+  // Parse mobile money accounts from settings JSON string
+  const mobileMoneyAccounts: MobileMoneyAccount[] = React.useMemo(() => {
+    if (!paymentInfo?.mobileMoney) return []
+    try {
+      const parsed = JSON.parse(paymentInfo.mobileMoney)
       return Array.isArray(parsed) ? parsed : []
     } catch {
       return []
@@ -182,36 +198,53 @@ export default function PaymentUploadScreen() {
           <Text style={styles.orderInfoLabel}>Amount to Pay</Text>
         </View>
 
-        {/* M-PESA Instructions */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Feather name="smartphone" size={18} color="#E8601C" style={{ marginRight: 8 }} />
-            <Text style={styles.cardTitle}>M-PESA (Mobile Money)</Text>
-          </View>
-          <View style={styles.instructionsList}>
-            {[
-              'Go to M-PESA menu on your phone',
-              'Select "Lipa na M-PESA" → "Paybill"',
-              { text: 'Business Number: ', bold: paymentInfo?.mobileMoney || '—' },
-              { text: 'Account Number: ', bold: orderId.slice(0, 8) },
-              { text: 'Amount: ', bold: `KES ${order?.totalAmount.toLocaleString()}` },
-              'Enter your M-PESA PIN and confirm',
-            ].map((step, i) => (
-              <View key={i} style={styles.stepRow}>
-                <View style={styles.stepNumber}>
-                  <Text style={styles.stepNumberText}>{i + 1}</Text>
+        {/* Mobile Money Accounts — Dynamic from settings */}
+        {mobileMoneyAccounts.length > 0 && mobileMoneyAccounts.map((wallet, walletIndex) => (
+          <View key={`wallet-${walletIndex}`} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Feather name="smartphone" size={18} color="#E8601C" style={{ marginRight: 8 }} />
+              <Text style={styles.cardTitle}>{wallet.walletName || `Mobile Money ${walletIndex + 1}`}</Text>
+            </View>
+            <View style={styles.instructionsList}>
+              {[
+                `Go to ${wallet.walletName || 'your mobile money menu'} on your phone`,
+                'Select "Send Money" or "Paybill"',
+                { text: 'Business/Phone Number: ', bold: wallet.phoneNumber || '—' },
+                { text: 'Account Number/Reference: ', bold: orderId.slice(0, 8) },
+                { text: 'Amount: ', bold: `KES ${order?.totalAmount.toLocaleString()}` },
+                'Enter your PIN and confirm',
+              ].map((step, i) => (
+                <View key={i} style={styles.stepRow}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>{i + 1}</Text>
+                  </View>
+                  {typeof step === 'string' ? (
+                    <Text style={styles.stepText}>{step}</Text>
+                  ) : (
+                    <Text style={styles.stepText}>
+                      {step.text}<Text style={styles.stepBold}>{step.bold}</Text>
+                    </Text>
+                  )}
                 </View>
-                {typeof step === 'string' ? (
-                  <Text style={styles.stepText}>{step}</Text>
-                ) : (
-                  <Text style={styles.stepText}>
-                    {step.text}<Text style={styles.stepBold}>{step.bold}</Text>
-                  </Text>
-                )}
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
-        </View>
+        ))}
+
+        {/* Fallback if no mobile money accounts configured */}
+        {mobileMoneyAccounts.length === 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Feather name="smartphone" size={18} color="#E8601C" style={{ marginRight: 8 }} />
+              <Text style={styles.cardTitle}>Mobile Money</Text>
+            </View>
+            <View style={styles.bankDetails}>
+              <Text style={{ fontSize: 13, color: '#999', textAlign: 'center', paddingVertical: 8 }}>
+                No mobile money accounts configured. Contact the shop for details.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Bank Transfer — Dynamic from settings */}
         {bankAccounts.length > 0 && bankAccounts.map((bank, bankIndex) => (

@@ -47,6 +47,9 @@ export default function SettingsPage() {
     // ─── Bank Accounts (multiple) ───────────
     const [bankAccounts, setBankAccounts] = useState([]);
 
+    // ─── Mobile Money Accounts (multiple) ───
+    const [mobileMoneyAccounts, setMobileMoneyAccounts] = useState([]);
+
     useEffect(() => {
         settingsService.getAll()
             .then(res => {
@@ -57,6 +60,15 @@ export default function SettingsPage() {
                     setBankAccounts(Array.isArray(accounts) ? accounts : []);
                 } catch {
                     setBankAccounts([]);
+                }
+
+                // Parse mobile money accounts from JSON string
+                try {
+                    const mobileAccounts = JSON.parse(res.data.payment_mobile_money || '[]');
+                    setMobileMoneyAccounts(Array.isArray(mobileAccounts) ? mobileAccounts : []);
+                } catch {
+                    // Fallback to storing string if there was old string data, or just empty array
+                    setMobileMoneyAccounts([]);
                 }
             })
             .catch(() => { })
@@ -92,6 +104,7 @@ export default function SettingsPage() {
             const settingsToSave = {
                 ...shopSettings,
                 payment_bank_accounts: JSON.stringify(bankAccounts),
+                payment_mobile_money: JSON.stringify(mobileMoneyAccounts),
             };
             await settingsService.update(settingsToSave);
             setSettingsMsg({ type: 'success', text: 'Settings saved!' });
@@ -112,6 +125,20 @@ export default function SettingsPage() {
         const updated = [...bankAccounts];
         updated[index] = { ...updated[index], [field]: value };
         setBankAccounts(updated);
+    };
+
+    const addMobileMoneyAccount = () => {
+        setMobileMoneyAccounts([...mobileMoneyAccounts, { walletName: '', phoneNumber: '' }]);
+    };
+
+    const removeMobileMoneyAccount = (index) => {
+        setMobileMoneyAccounts(mobileMoneyAccounts.filter((_, i) => i !== index));
+    };
+
+    const updateMobileMoneyAccount = (index, field, value) => {
+        const updated = [...mobileMoneyAccounts];
+        updated[index] = { ...updated[index], [field]: value };
+        setMobileMoneyAccounts(updated);
     };
 
     const previewEtb = newRate ? `1 KES = ${(1 / parseFloat(newRate)).toFixed(2)} ETB` : '';
@@ -301,16 +328,72 @@ export default function SettingsPage() {
                         ))}
                     </div>
 
+                    {/* ─── Multiple Mobile Money Accounts ─── */}
                     <div className="setting-card">
-                        <div className="form-group">
-                            <label htmlFor="mobile-money">Mobile Money Number</label>
-                            <input
-                                id="mobile-money"
-                                value={shopSettings.payment_mobile_money || ''}
-                                onChange={(e) => setShopSettings({ ...shopSettings, payment_mobile_money: e.target.value })}
-                                placeholder="Enter mobile money number"
-                            />
+                        <div className="setting-row" style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <CreditCard size={16} /> Mobile Money Accounts
+                            </label>
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                onClick={addMobileMoneyAccount}
+                                id="add-mobile-money-btn"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}
+                            >
+                                <Plus size={14} /> Add Wallet
+                            </button>
                         </div>
+
+                        {mobileMoneyAccounts.length === 0 && (
+                            <div style={{ textAlign: 'center', padding: '1.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.9rem', opacity: 0.7 }}>
+                                No mobile money accounts configured. Click "Add Wallet" to add one.
+                            </div>
+                        )}
+
+                        {mobileMoneyAccounts.map((account, index) => (
+                            <div key={index} className="mobile-money-entry" style={{
+                                border: '1px solid var(--border)',
+                                borderRadius: '0.75rem',
+                                padding: '1rem',
+                                marginBottom: '0.75rem',
+                                position: 'relative',
+                                background: 'var(--bg-secondary, #f8f9fa)',
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+                                        Wallet #{index + 1}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline"
+                                        onClick={() => removeMobileMoneyAccount(index)}
+                                        style={{ color: '#ef4444', borderColor: '#fca5a5', padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                                        id={`remove-mobile-money-${index}`}
+                                    >
+                                        <Trash2 size={13} />
+                                    </button>
+                                </div>
+                                <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+                                    <label htmlFor={`wallet-name-${index}`} style={{ fontSize: '0.82rem' }}>Wallet Name</label>
+                                    <input
+                                        id={`wallet-name-${index}`}
+                                        value={account.walletName || ''}
+                                        onChange={(e) => updateMobileMoneyAccount(index, 'walletName', e.target.value)}
+                                        placeholder="e.g. M-PESA"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor={`phone-number-${index}`} style={{ fontSize: '0.82rem' }}>Phone Number</label>
+                                    <input
+                                        id={`phone-number-${index}`}
+                                        value={account.phoneNumber || ''}
+                                        onChange={(e) => updateMobileMoneyAccount(index, 'phoneNumber', e.target.value)}
+                                        placeholder="e.g. 254712345678"
+                                    />
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
                     <h2><Clock size={20} /> Reservation Settings</h2>

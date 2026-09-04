@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Use validate in production, not update
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+logging:
+  level:
+    root: INFO
+    com.shop.retailbackend: INFO
+    org.springframework.security: WARN
+    org.hibernate: WARN

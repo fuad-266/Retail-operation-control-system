@@ -2,8 +2,8 @@ import axios from 'axios'
 import * as SecureStore from 'expo-secure-store'
 import { triggerGlobalLogout } from '../context/AuthContext'
 
-const API_BASE_URL = 'http://192.168.1.2:8080/api' // Your backend running on this computer
-export const SERVER_BASE_URL = 'http://192.168.1.2:8080' // Base URL without /api, for images etc.
+const API_BASE_URL = 'https://adamashop.duckdns.org/api' // Live hosted backend 
+export const SERVER_BASE_URL = 'https://adamashop.duckdns.org' // Base URL without /api, for images etc.
 
 const api = axios.create({
   baseURL: API_BASE_URL,

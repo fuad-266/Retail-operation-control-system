@@ -23,6 +23,7 @@ import java.util.UUID;
 public class UploadController {
 
     private final UploadProperties uploadProperties;
+    private final com.shop.retailbackend.service.CloudinaryService cloudinaryService;
 
     private static final Set<String> ALLOWED_TYPES = Set.of(
             "image/jpeg", "image/png", "image/webp", "image/gif");
@@ -46,23 +47,8 @@ public class UploadController {
         }
 
         try {
-            Path uploadDir = Paths.get(uploadProperties.getProductImagesDir());
-            Files.createDirectories(uploadDir);
-
-            // Generate a unique filename
-            String originalName = file.getOriginalFilename();
-            String extension = "";
-            if (originalName != null && originalName.contains(".")) {
-                extension = originalName.substring(originalName.lastIndexOf("."));
-            }
-            String filename = UUID.randomUUID() + extension;
-
-            // Save to disk
-            file.transferTo(uploadDir.resolve(filename));
-
-            // Return the URL path (relative to the backend base)
-            String imageUrl = "/uploads/products/" + filename;
-            return ResponseEntity.ok(Map.of("imageUrl", imageUrl));
+            String secureUrl = cloudinaryService.uploadImage(file, "retail/products");
+            return ResponseEntity.ok(Map.of("imageUrl", secureUrl));
 
         } catch (IOException e) {
             throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR,

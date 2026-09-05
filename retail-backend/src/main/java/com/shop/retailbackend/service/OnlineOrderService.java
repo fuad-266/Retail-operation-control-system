@@ -44,6 +44,7 @@ public class OnlineOrderService {
     private final ExchangeRateService exchangeRateService;
     private final PaymentService paymentService;
     private final UploadProperties uploadProperties;
+    private final CloudinaryService cloudinaryService;
 
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024L; // 5 MB
     private static final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png");
@@ -107,17 +108,15 @@ public class OnlineOrderService {
 
         validateScreenshot(screenshot);
 
-        String filename = UUID.randomUUID() + getExtension(screenshot.getContentType());
-        Path uploadDir = Paths.get(uploadProperties.getScreenshotsDir());
+        String secureUrl;
         try {
-            Files.createDirectories(uploadDir);
-            screenshot.transferTo(uploadDir.resolve(filename));
+            secureUrl = cloudinaryService.uploadImage(screenshot, "retail/screenshots");
         } catch (IOException e) {
-            log.error("Failed to store screenshot", e);
+            log.error("Failed to upload screenshot to Cloudinary", e);
             throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to store screenshot");
         }
 
-        order.setPaymentScreenshotUrl(filename);
+        order.setPaymentScreenshotUrl(secureUrl);
         order.setPaymentReference(paymentReference);
         order.setStatus(OnlineOrderStatus.SCREENSHOT_SUBMITTED);
         order.setRejectionReason(null); // clear previous rejection
@@ -135,15 +134,13 @@ public class OnlineOrderService {
             throw new AppException(HttpStatus.NOT_FOUND, "No screenshot found for this order");
         }
         try {
-            Path file = Paths.get(uploadProperties.getScreenshotsDir())
-                    .resolve(order.getPaymentScreenshotUrl());
-            Resource resource = new UrlResource(file.toUri());
+            Resource resource = new UrlResource(java.net.URI.create(order.getPaymentScreenshotUrl()));
             if (!resource.exists() || !resource.isReadable()) {
-                throw new AppException(HttpStatus.NOT_FOUND, "Screenshot file not found");
+                throw new AppException(HttpStatus.NOT_FOUND, "Screenshot cloud link not accessible");
             }
             return resource;
-        } catch (IOException e) {
-            throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not read screenshot");
+        } catch (java.net.MalformedURLException e) {
+            throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not resolve screenshot link");
         }
     }
 

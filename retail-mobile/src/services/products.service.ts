@@ -16,7 +16,7 @@ export interface ProductDto {
 
 const resolveImageUrl = (url: string | null): string => {
   if (!url) return ''
-  if (url.startsWith('http')) return url
+  if (url.startsWith('http')) return url.replace('http://', 'https://')
   return `${SERVER_BASE_URL}${url}`
 }
 

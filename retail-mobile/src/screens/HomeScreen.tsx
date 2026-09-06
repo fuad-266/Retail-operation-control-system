@@ -22,6 +22,8 @@ import { productsService, ProductDto } from '../services/products.service'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useCurrency } from '../context/CurrencyContext'
+import { useFavorites } from '../context/FavoritesContext'
+import BottomNav from '../components/BottomNav'
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>
 
@@ -49,7 +51,7 @@ export default function HomeScreen() {
   const { currency, setCurrency, formatPrice } = useCurrency()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [favorites, setFavorites] = useState<Set<string>>(new Set())
+  const { toggleFavorite, isFavorite } = useFavorites()
   const insets = useSafeAreaInsets()
 
   const { data: products, isLoading, error } = useQuery({
@@ -68,18 +70,6 @@ export default function HomeScreen() {
   })
 
   const cartItemCount = getTotalItems()
-
-  const toggleFavorite = (productId: string) => {
-    setFavorites(prev => {
-      const newFavs = new Set(prev)
-      if (newFavs.has(productId)) {
-        newFavs.delete(productId)
-      } else {
-        newFavs.add(productId)
-      }
-      return newFavs
-    })
-  }
 
   const handleQuickAdd = (product: ProductDto) => {
     if (product.stockQuantity > 0) {
@@ -105,12 +95,12 @@ export default function HomeScreen() {
       >
         <View style={[
           styles.favoriteCircle,
-          favorites.has(item.id) && styles.favoriteCircleActive
+          isFavorite(item.id) && styles.favoriteCircleActive
         ]}>
           <Ionicons
-            name={favorites.has(item.id) ? 'heart' : 'heart-outline'}
+            name={isFavorite(item.id) ? 'heart' : 'heart-outline'}
             size={16}
-            color={favorites.has(item.id) ? '#D80000' : '#666'}
+            color={isFavorite(item.id) ? '#D80000' : '#666'}
           />
         </View>
       </TouchableOpacity>
@@ -318,36 +308,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* Bottom Tab Bar */}
-      <View style={[styles.bottomBar, { bottom: Math.max(20, insets.bottom + 10) }]}>
-        <TouchableOpacity style={styles.tabItem}>
-          <View style={styles.tabActiveIndicator}>
-            <Feather name="home" size={20} color="#fff" />
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.tabItem}
-          onPress={() => navigation.navigate('Cart')}
-        >
-          <Feather name="shopping-cart" size={20} color="#666" />
-          {cartItemCount > 0 && (
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{cartItemCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.tabItem}
-          onPress={() => { }}
-        >
-          <Feather name="heart" size={20} color="#666" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.tabItem}
-          onPress={() => navigation.navigate('Orders')}
-        >
-          <Feather name="list" size={20} color="#666" />
-        </TouchableOpacity>
-      </View>
+      <BottomNav activeTab="Home" />
     </SafeAreaView >
   )
 }
@@ -736,60 +697,4 @@ const styles = StyleSheet.create({
     color: '#999',
   },
 
-  // Bottom Tab Bar
-  bottomBar: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    height: 60,
-    backgroundColor: '#1A1A2E',
-    borderRadius: 30,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  tabItem: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  tabActiveIndicator: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#E8601C',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabIcon: {
-    fontSize: 20,
-  },
-  tabBadge: {
-    position: 'absolute',
-    top: 2,
-    right: -2,
-    backgroundColor: '#E8601C',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 2,
-    borderColor: '#1A1A2E',
-  },
-  tabBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '800',
-  },
 })

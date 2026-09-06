@@ -16,6 +16,7 @@ import { StackNavigationProp } from '@react-navigation/stack'
 import { RootStackParamList } from '../navigation/AppStack'
 import { useCart, CartItem } from '../context/CartContext'
 import { useCurrency } from '../context/CurrencyContext'
+import BottomNav from '../components/BottomNav'
 
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>
 
@@ -131,6 +132,7 @@ export default function CartScreen() {
             <Text style={styles.shopButtonText}>Start Shopping</Text>
           </TouchableOpacity>
         </View>
+        <BottomNav activeTab="Cart" />
       </SafeAreaView>
     )
   }
@@ -165,7 +167,7 @@ export default function CartScreen() {
       />
 
       {/* Footer */}
-      <View style={[styles.footer, { paddingBottom: Math.max(28, insets.bottom + 16) }]}>
+      <View style={[styles.footer, { paddingBottom: Math.max(28, insets.bottom + 16), marginBottom: 80 }]}>
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalAmount}>{formatPrice(getTotalPrice('KES'), getTotalPrice('ETB'))}</Text>
@@ -184,6 +186,7 @@ export default function CartScreen() {
           </View>
         </TouchableOpacity>
       </View>
+      <BottomNav activeTab="Cart" />
     </SafeAreaView>
   )
 }

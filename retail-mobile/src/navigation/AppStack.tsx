@@ -12,6 +12,7 @@ import CheckoutScreen from '../screens/CheckoutScreen'
 import PaymentUploadScreen from '../screens/PaymentUploadScreen'
 import MyOrdersScreen from '../screens/MyOrdersScreen'
 import OrderDetailScreen from '../screens/OrderDetailScreen'
+import FavoritesScreen from '../screens/FavoritesScreen'
 
 export type RootStackParamList = {
   Login: undefined
@@ -22,6 +23,7 @@ export type RootStackParamList = {
   PaymentUpload: { orderId: string }
   Orders: undefined
   OrderDetail: { orderId: string }
+  Favorites: undefined
 }
 
 const Stack = createStackNavigator<RootStackParamList>()
@@ -49,6 +51,7 @@ export function AppStack() {
           <Stack.Screen name="PaymentUpload" component={PaymentUploadScreen} />
           <Stack.Screen name="Orders" component={MyOrdersScreen} />
           <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+          <Stack.Screen name="Favorites" component={FavoritesScreen} />
         </>
       ) : (
         // Non-customer roles should use web interface

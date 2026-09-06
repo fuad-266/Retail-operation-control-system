@@ -14,6 +14,7 @@ import { StackNavigationProp } from '@react-navigation/stack'
 import { useQuery } from '@tanstack/react-query'
 import { RootStackParamList } from '../navigation/AppStack'
 import { ordersService, OnlineOrderDto } from '../services/orders.service'
+import BottomNav from '../components/BottomNav'
 
 type MyOrdersScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Orders'>
 
@@ -154,6 +155,7 @@ export default function MyOrdersScreen() {
           contentContainerStyle={styles.listContent}
         />
       )}
+      <BottomNav activeTab="Orders" />
     </SafeAreaView>
   )
 }
@@ -174,6 +176,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
+    paddingBottom: 100, // Make room for BottomNav
   },
   orderCard: {
     backgroundColor: '#fff',

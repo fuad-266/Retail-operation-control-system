@@ -179,46 +179,18 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Image
-              source={require('../../assets/logo.png')}
-              style={styles.headerLogo}
-            />
-          </View>
-          <View style={styles.headerRight}>
-            {/* Language Toggle */}
-            <TouchableOpacity
-              style={styles.iconCircleBtn}
-              onPress={() => setLanguage(language === 'en' ? 'am' : 'en')}
-            >
-              <Ionicons name="language" size={18} color="#E8601C" />
-              <Text style={styles.langIconText}>{language === 'en' ? 'EN' : 'አማ'}</Text>
-            </TouchableOpacity>
-
-            {/* Currency Toggle */}
-            <View style={styles.currencyToggle}>
-              <TouchableOpacity
-                style={[styles.currencyBtn, currency === 'KES' && styles.currencyBtnActive]}
-                onPress={() => setCurrency('KES')}
-              >
-                <Text style={[styles.currencyBtnText, currency === 'KES' && styles.currencyBtnTextActive]}>
-                  KES
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.currencyBtn, currency === 'ETB' && styles.currencyBtnActive]}
-                onPress={() => setCurrency('ETB')}
-              >
-                <Text style={[styles.currencyBtnText, currency === 'ETB' && styles.currencyBtnTextActive]}>
-                  ETB
-                </Text>
-              </TouchableOpacity>
+            <View style={styles.headerIconWrapper}>
+              <Image
+                source={require('../../assets/icon.jpg')}
+                style={styles.headerIconLogo}
+              />
             </View>
-
-            {/* Logout IconButton */}
-            <TouchableOpacity style={styles.logoutIconButton} onPress={logout}>
-              <Feather name="log-out" size={20} color="#D80000" />
-            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Adama <Text style={styles.headerTitleHighlight}>Shop</Text></Text>
           </View>
+          <TouchableOpacity style={styles.headerBell}>
+            <Feather name="bell" size={22} color="#4A2411" />
+            <View style={styles.notificationDot} />
+          </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
@@ -235,7 +207,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Hero Banner */}
+        {/* Hero Banner Image */}
         <View style={styles.bannerContainer}>
           <Image
             source={require('../../assets/hero_banner.png')}
@@ -261,7 +233,7 @@ export default function HomeScreen() {
                     styles.categoryIconContainer,
                     selectedCategory === cat && styles.categoryIconContainerActive,
                   ]}>
-                    <Ionicons name={getCategoryIcon(cat) as any} size={24} color={selectedCategory === cat ? '#E8601C' : '#666'} />
+                    <Ionicons name={getCategoryIcon(cat) as any} size={24} color={selectedCategory === cat ? '#4A2411' : '#666'} />
                   </View>
                   <Text style={[
                     styles.categoryLabel,
@@ -362,67 +334,49 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   logoContainer: {
-    justifyContent: 'center',
-    alignItems: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    marginLeft: -15,
   },
-  headerLogo: {
-    width: 120,
-    height: 48,
+  headerIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#4A2411',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    overflow: 'hidden',
+  },
+  headerIconLogo: {
+    width: 24,
+    height: 24,
     resizeMode: 'contain',
   },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  currencyToggle: {
-    flexDirection: 'row',
-    backgroundColor: '#F0F0F0',
-    borderRadius: 20,
-    padding: 2,
-  },
-  currencyBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 18,
-  },
-  currencyBtnActive: {
-    backgroundColor: '#E8601C',
-  },
-  currencyBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#999',
-  },
-  currencyBtnTextActive: {
-    color: '#fff',
-  },
-  iconCircleBtn: {
-    backgroundColor: '#FFE5EB', // Slight tint for language button
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-  },
-  langIconText: {
-    fontSize: 10,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: '800',
-    color: '#E8601C'
+    color: '#4A2411',
   },
-  logoutIconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFE5E5',
+  headerTitleHighlight: {
+    color: '#4A2411',
+  },
+  headerBell: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 2,
+    alignItems: 'flex-end',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 8,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4A2411',
+    borderWidth: 1.5,
+    borderColor: '#FAFAFA',
   },
 
   // Search
@@ -434,7 +388,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F0F0F0',
-    borderRadius: 14,
+    borderRadius: 24, // heavily curved
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -457,7 +411,7 @@ const styles = StyleSheet.create({
   heroBannerImage: {
     width: '100%',
     height: 180,
-    borderRadius: 20,
+    borderRadius: 24, // curved corners matching search bar style
     resizeMode: 'cover',
   },
 
@@ -481,20 +435,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 72,
   },
-  categoryItemActive: {},
+  categoryItemActive: {
+    backgroundColor: '#4A2411',
+  },
   categoryIconContainer: {
     width: 56,
     height: 56,
-    borderRadius: 16,
-    backgroundColor: '#FFF0EB',
+    borderRadius: 28,
+    backgroundColor: '#FAF0E6',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
   categoryIconContainerActive: {
-    borderColor: '#E8601C',
+    borderColor: '#4A2411',
     backgroundColor: '#FFE0D3',
   },
   categoryIcon: {
@@ -507,7 +461,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   categoryLabelActive: {
-    color: '#E8601C',
+    color: '#4A2411',
     fontWeight: '700',
   },
 
@@ -524,7 +478,7 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 14,
-    color: '#E8601C',
+    color: '#4A2411',
     fontWeight: '600',
   },
   productsGrid: {
@@ -612,7 +566,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#E8601C',
+    backgroundColor: '#4A2411',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -102,7 +102,7 @@ export default function MyOrdersScreen() {
           style={styles.payButton}
           onPress={(e) => {
             e.stopPropagation()
-            navigation.navigate('PaymentUpload', { orderId: item.id })
+            navigation.navigate('PaymentUpload', { orderId: item.id, amountKes: item.totalAmount })
           }}
         >
           <Text style={styles.payButtonText}>Upload Payment</Text>

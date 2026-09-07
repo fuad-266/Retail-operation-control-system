@@ -43,7 +43,7 @@ export default function CheckoutScreen() {
           [
             {
               text: 'OK',
-              onPress: () => navigation.navigate('PaymentUpload', { orderId: order.id }),
+              onPress: () => navigation.navigate('PaymentUpload', { orderId: order.id, paymentMethod, amountKes: order.totalAmount }),
             },
           ]
         )

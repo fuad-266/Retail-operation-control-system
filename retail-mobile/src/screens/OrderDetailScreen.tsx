@@ -190,7 +190,7 @@ export default function OrderDetailScreen() {
         {order.status === 'PENDING' && (
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => navigation.navigate('PaymentUpload', { orderId: order.id })}
+            onPress={() => navigation.navigate('PaymentUpload', { orderId: order.id, amountKes: order.totalAmount })}
             activeOpacity={0.85}
           >
             <Feather name="upload" size={16} color="#fff" />

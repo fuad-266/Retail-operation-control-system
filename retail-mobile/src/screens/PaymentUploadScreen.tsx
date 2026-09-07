@@ -19,12 +19,14 @@ import * as ImagePicker from 'expo-image-picker'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { RootStackParamList } from '../navigation/AppStack'
 import { ordersService } from '../services/orders.service'
+import { useCurrency } from '../context/CurrencyContext'
+import api from '../services/api'
 
 type PaymentUploadScreenNavigationProp = StackNavigationProp<RootStackParamList, 'PaymentUpload'>
 type PaymentUploadScreenRouteProp = {
   key: string
   name: 'PaymentUpload'
-  params: { orderId: string }
+  params: { orderId: string; paymentMethod?: string; amountKes?: number }
 }
 
 interface BankAccount {
@@ -42,39 +44,63 @@ export default function PaymentUploadScreen() {
   const navigation = useNavigation<PaymentUploadScreenNavigationProp>()
   const route = useRoute<PaymentUploadScreenRouteProp>()
   const insets = useSafeAreaInsets()
-  const { orderId } = route.params
+  const { orderId, paymentMethod, amountKes: routeAmountKes } = route.params
+  const { formatPrice } = useCurrency()
 
   const [imageUri, setImageUri] = useState<string | null>(null)
   const [paymentReference, setPaymentReference] = useState('')
 
-  const { data: order, isLoading } = useQuery({
+  const { data: order, isLoading: isOrderLoading } = useQuery({
     queryKey: ['order', orderId],
     queryFn: () => ordersService.getOrder(orderId),
   })
 
-  // Fetch payment info (bank accounts + mobile money) from settings
-  const { data: paymentInfo } = useQuery({
+  // Fetch payment info (bank accounts + mobile money) directly from backend via settings
+  const { data: paymentInfo, isLoading: isPaymentInfoLoading } = useQuery({
     queryKey: ['paymentInfo'],
     queryFn: () => ordersService.getPaymentInfo(),
   })
 
-  // Parse bank accounts from settings JSON string
+  // Fetch exchange rate to display correct ETB total since backend returns KES strictly for order total
+  const { data: exchangeRateData, isLoading: isRateLoading } = useQuery({
+    queryKey: ['exchangeRate'],
+    queryFn: () => api.get('/settings/exchange-rate').then((r) => r.data),
+  })
+
   const bankAccounts: BankAccount[] = React.useMemo(() => {
     if (!paymentInfo?.bankAccounts) return []
     try {
       const parsed = JSON.parse(paymentInfo.bankAccounts)
-      return Array.isArray(parsed) ? parsed : []
+      if (!Array.isArray(parsed)) return []
+
+      // Filter out empty or demo/test accounts
+      return parsed.filter((acc: any) => {
+        const name = (acc.bankName || '').toLowerCase()
+        const acctName = (acc.accountName || '').toLowerCase()
+        const acctNumber = (acc.accountNumber || '').trim()
+
+        if (!acctNumber) return false
+        return !name.includes('demo') && !name.includes('test') && !acctName.includes('demo') && !acctName.includes('test')
+      })
     } catch {
       return []
     }
   }, [paymentInfo])
 
-  // Parse mobile money accounts from settings JSON string
   const mobileMoneyAccounts: MobileMoneyAccount[] = React.useMemo(() => {
     if (!paymentInfo?.mobileMoney) return []
     try {
       const parsed = JSON.parse(paymentInfo.mobileMoney)
-      return Array.isArray(parsed) ? parsed : []
+      if (!Array.isArray(parsed)) return []
+
+      // Filter out empty or demo/test accounts
+      return parsed.filter((acc: any) => {
+        const name = (acc.walletName || '').toLowerCase()
+        const phone = (acc.phoneNumber || '').trim().toLowerCase()
+
+        if (!phone) return false
+        return !name.includes('demo') && !name.includes('test') && !phone.includes('demo') && !phone.includes('test')
+      })
     } catch {
       return []
     }
@@ -157,6 +183,10 @@ export default function PaymentUploadScreen() {
     })
   }
 
+  // We do not strict block rendering here on isOrderLoading IF we already have routeAmountKes
+  // This prevents the screen from showing 0 if the secondary order query fails
+  const isLoading = (isOrderLoading && !routeAmountKes) || isPaymentInfoLoading || isRateLoading
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -167,6 +197,11 @@ export default function PaymentUploadScreen() {
       </SafeAreaView>
     )
   }
+
+  // Calculate formatted total price using exchange rate if ETB
+  const rate = exchangeRateData?.rate || 1
+  const priceKes = order?.totalAmount || routeAmountKes || 0
+  const priceEtb = priceKes / rate
 
   return (
     <SafeAreaView style={styles.container}>
@@ -186,104 +221,55 @@ export default function PaymentUploadScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}
       >
-        {/* Order Info Card */}
+        {/* Order Info Card (Visible Amount) */}
         <View style={styles.orderInfoCard}>
           <View style={styles.orderInfoIcon}>
             <Feather name="credit-card" size={24} color="#fff" />
           </View>
-          <Text style={styles.orderInfoId}>Order #{orderId.slice(0, 8)}</Text>
-          <Text style={styles.orderInfoTotal}>
-            KES {order?.totalAmount.toLocaleString()}
-          </Text>
           <Text style={styles.orderInfoLabel}>Amount to Pay</Text>
+          <Text style={styles.orderInfoTotal}>
+            {formatPrice(priceKes, priceEtb)}
+          </Text>
+          <Text style={styles.orderInfoId}>Order #{orderId.slice(0, 8)}</Text>
         </View>
 
-        {/* Mobile Money Accounts — Dynamic from settings */}
-        {mobileMoneyAccounts.length > 0 && mobileMoneyAccounts.map((wallet, walletIndex) => (
-          <View key={`wallet-${walletIndex}`} style={styles.card}>
+        {/* Mobile Money Accounts */}
+        {(!paymentMethod || paymentMethod === 'MOBILE_MONEY') && mobileMoneyAccounts.map((wallet, index) => (
+          <View key={`mm-${index}`} style={styles.card}>
             <View style={styles.cardHeader}>
               <Feather name="smartphone" size={18} color="#E8601C" style={{ marginRight: 8 }} />
-              <Text style={styles.cardTitle}>{wallet.walletName || `Mobile Money ${walletIndex + 1}`}</Text>
+              <Text style={styles.cardTitle}>{wallet.walletName || 'Mobile Money'}</Text>
             </View>
             <View style={styles.instructionsList}>
-              {[
-                `Go to ${wallet.walletName || 'your mobile money menu'} on your phone`,
-                'Select "Send Money" or "Paybill"',
-                { text: 'Business/Phone Number: ', bold: wallet.phoneNumber || '—' },
-                { text: 'Account Number/Reference: ', bold: orderId.slice(0, 8) },
-                { text: 'Amount: ', bold: `KES ${order?.totalAmount.toLocaleString()}` },
-                'Enter your PIN and confirm',
-              ].map((step, i) => (
-                <View key={i} style={styles.stepRow}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>{i + 1}</Text>
-                  </View>
-                  {typeof step === 'string' ? (
-                    <Text style={styles.stepText}>{step}</Text>
-                  ) : (
-                    <Text style={styles.stepText}>
-                      {step.text}<Text style={styles.stepBold}>{step.bold}</Text>
-                    </Text>
-                  )}
-                </View>
-              ))}
+              <Text style={styles.stepText}>
+                Phone Number / Paybill: <Text style={styles.stepBold}>{wallet.phoneNumber}</Text>
+              </Text>
+              <Text style={styles.stepText}>
+                Use order number <Text style={styles.stepBold}>#{orderId.slice(0, 8)}</Text> as reference.
+              </Text>
             </View>
           </View>
         ))}
 
-        {/* Fallback if no mobile money accounts configured */}
-        {mobileMoneyAccounts.length === 0 && (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Feather name="smartphone" size={18} color="#E8601C" style={{ marginRight: 8 }} />
-              <Text style={styles.cardTitle}>Mobile Money</Text>
-            </View>
-            <View style={styles.bankDetails}>
-              <Text style={{ fontSize: 13, color: '#999', textAlign: 'center', paddingVertical: 8 }}>
-                No mobile money accounts configured. Contact the shop for details.
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Bank Transfer — Dynamic from settings */}
-        {bankAccounts.length > 0 && bankAccounts.map((bank, bankIndex) => (
-          <View key={bankIndex} style={styles.card}>
+        {/* Bank Transfer Accounts */}
+        {(!paymentMethod || paymentMethod === 'BANK_TRANSFER') && bankAccounts.map((bank, index) => (
+          <View key={`bank-${index}`} style={styles.card}>
             <View style={styles.cardHeader}>
               <Feather name="credit-card" size={18} color="#E8601C" style={{ marginRight: 8 }} />
-              <Text style={styles.cardTitle}>
-                {bank.bankName || `Bank ${bankIndex + 1}`}
-              </Text>
+              <Text style={styles.cardTitle}>{bank.bankName || 'Bank Transfer'}</Text>
             </View>
             <View style={styles.bankDetails}>
-              {[
-                { label: 'Bank', value: bank.bankName || '—' },
-                { label: 'Account Name', value: bank.accountName || '—' },
-                { label: 'Account Number', value: bank.accountNumber || '—' },
-              ].map((detail, i) => (
-                <View key={i} style={styles.bankRow}>
-                  <Text style={styles.bankLabel}>{detail.label}</Text>
-                  <Text style={styles.bankValue}>{detail.value}</Text>
-                </View>
-              ))}
+              <View style={styles.bankRow}>
+                <Text style={styles.bankLabel}>Account Name</Text>
+                <Text style={styles.bankValue}>{bank.accountName}</Text>
+              </View>
+              <View style={styles.bankRow}>
+                <Text style={styles.bankLabel}>Account Number</Text>
+                <Text style={styles.bankValue}>{bank.accountNumber}</Text>
+              </View>
             </View>
           </View>
         ))}
-
-        {/* Fallback if no bank accounts configured */}
-        {bankAccounts.length === 0 && (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Feather name="credit-card" size={18} color="#E8601C" style={{ marginRight: 8 }} />
-              <Text style={styles.cardTitle}>Bank Transfer</Text>
-            </View>
-            <View style={styles.bankDetails}>
-              <Text style={{ fontSize: 13, color: '#999', textAlign: 'center', paddingVertical: 8 }}>
-                No bank accounts configured. Contact the shop for bank details.
-              </Text>
-            </View>
-          </View>
-        )}
 
         {/* Upload Screenshot Card */}
         <View style={styles.card}>

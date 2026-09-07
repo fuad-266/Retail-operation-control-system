@@ -20,7 +20,7 @@ export type RootStackParamList = {
   ProductDetail: { productId: string }
   Cart: undefined
   Checkout: undefined
-  PaymentUpload: { orderId: string }
+  PaymentUpload: { orderId: string, paymentMethod?: string, amountKes?: number }
   Orders: undefined
   OrderDetail: { orderId: string }
   Favorites: undefined

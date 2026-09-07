@@ -19,6 +19,7 @@ import { useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { RootStackParamList } from '../navigation/AppStack'
 import { productsService, ProductDto } from '../services/products.service'
+import { ordersService } from '../services/orders.service'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useCurrency } from '../context/CurrencyContext'
@@ -60,6 +61,16 @@ export default function HomeScreen() {
     queryKey: ['products'],
     queryFn: productsService.listPublic,
   })
+
+  const { data: orders } = useQuery({
+    queryKey: ['my_orders_notifications'],
+    queryFn: ordersService.getMyOrders,
+    refetchInterval: 10000, // Background updates every 10 seconds to catch payment approvals
+  })
+
+  const hasActiveNotification = orders?.some(order =>
+    ['APPROVED', 'SHIPPED', 'DELIVERY_STARTED', 'READY_FOR_DELIVERY', 'REJECTED', 'COMPLETED'].includes(order.status)
+  ) ?? false;
 
   const categories = products
     ? Array.from(new Set(products.map(p => p.category)))
@@ -187,9 +198,9 @@ export default function HomeScreen() {
             </View>
             <Text style={styles.headerTitle}>Adama <Text style={styles.headerTitleHighlight}>Shop</Text></Text>
           </View>
-          <TouchableOpacity style={styles.headerBell}>
+          <TouchableOpacity style={styles.headerBell} onPress={() => navigation.navigate('Orders')}>
             <Feather name="bell" size={22} color="#4A2411" />
-            <View style={styles.notificationDot} />
+            {hasActiveNotification && <View style={styles.notificationDot} />}
           </TouchableOpacity>
         </View>
 

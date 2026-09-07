@@ -16,6 +16,7 @@ import { StackNavigationProp } from '@react-navigation/stack'
 import { RootStackParamList } from '../navigation/AppStack'
 import { useCart, CartItem } from '../context/CartContext'
 import { useCurrency } from '../context/CurrencyContext'
+import { useLanguage } from '../context/LanguageContext'
 import BottomNav from '../components/BottomNav'
 
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>
@@ -25,6 +26,7 @@ export default function CartScreen() {
   const insets = useSafeAreaInsets()
   const { items, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart()
   const { currency, formatPrice } = useCurrency()
+  const { t } = useLanguage()
 
   const handleRemoveItem = (productId: string, productName: string) => {
     Alert.alert(
@@ -114,7 +116,7 @@ export default function CartScreen() {
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.backBtnText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Shopping Cart</Text>
+          <Text style={styles.headerTitle}>{t('shopping_cart')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -122,14 +124,14 @@ export default function CartScreen() {
           <View style={styles.emptyCartIconContainer}>
             <Feather name="shopping-cart" size={44} color="#E8601C" />
           </View>
-          <Text style={styles.emptyCartTitle}>Your cart is empty</Text>
-          <Text style={styles.emptyCartText}>Add some products to get started</Text>
+          <Text style={styles.emptyCartTitle}>{t('empty_cart_title')}</Text>
+          <Text style={styles.emptyCartText}>{t('empty_cart_text')}</Text>
           <TouchableOpacity
             style={styles.shopButton}
             onPress={() => navigation.navigate('Home')}
             activeOpacity={0.85}
           >
-            <Text style={styles.shopButtonText}>Start Shopping</Text>
+            <Text style={styles.shopButtonText}>{t('start_shopping')}</Text>
           </TouchableOpacity>
         </View>
         <BottomNav activeTab="Cart" />
@@ -146,15 +148,17 @@ export default function CartScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backBtnText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Shopping Cart</Text>
+        <Text style={styles.headerTitle}>{t('shopping_cart')}</Text>
         <TouchableOpacity onPress={handleClearCart}>
-          <Text style={styles.clearButton}>Clear</Text>
+          <Text style={styles.clearButton}>{t('clear')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Item Count */}
       <View style={styles.itemCountBar}>
-        <Text style={styles.itemCountText}>{items.length} item{items.length !== 1 ? 's' : ''} in cart</Text>
+        <Text style={styles.itemCountText}>
+          {items.length} {items.length !== 1 ? t('items_in_cart') : t('item_in_cart')}
+        </Text>
       </View>
 
       <FlatList
@@ -169,7 +173,7 @@ export default function CartScreen() {
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: Math.max(28, insets.bottom + 16), marginBottom: 80 }]}>
         <View style={styles.totalContainer}>
-          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.totalLabel}>{t('total_label')}</Text>
           <Text style={styles.totalAmount}>{formatPrice(getTotalPrice('KES'), getTotalPrice('ETB'))}</Text>
         </View>
 
@@ -179,7 +183,7 @@ export default function CartScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.checkoutButtonText}>
-            Proceed to Checkout
+            {t('proceed_to_checkout')}
           </Text>
           <View style={styles.checkoutArrow}>
             <Text style={styles.checkoutArrowText}>→</Text>

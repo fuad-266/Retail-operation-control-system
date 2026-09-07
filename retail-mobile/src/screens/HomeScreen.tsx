@@ -178,33 +178,21 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.locationLabel}>{t('location')}</Text>
-            <View style={styles.locationRow}>
-              <Feather name="map-pin" size={14} color="#1A1A2E" />
-              <Text style={styles.locationText}>{t('welcome')}</Text>
-            </View>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.headerLogo}
+            />
           </View>
           <View style={styles.headerRight}>
             {/* Language Toggle */}
-            <View style={styles.currencyToggle}>
-              <TouchableOpacity
-                style={[styles.currencyBtn, language === 'en' && styles.currencyBtnActive]}
-                onPress={() => setLanguage('en')}
-              >
-                <Text style={[styles.currencyBtnText, language === 'en' && styles.currencyBtnTextActive]}>
-                  EN
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.currencyBtn, language === 'am' && styles.currencyBtnActive]}
-                onPress={() => setLanguage('am')}
-              >
-                <Text style={[styles.currencyBtnText, language === 'am' && styles.currencyBtnTextActive]}>
-                  አማ
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.iconCircleBtn}
+              onPress={() => setLanguage(language === 'en' ? 'am' : 'en')}
+            >
+              <Ionicons name="language" size={18} color="#E8601C" />
+              <Text style={styles.langIconText}>{language === 'en' ? 'EN' : 'አማ'}</Text>
+            </TouchableOpacity>
 
             {/* Currency Toggle */}
             <View style={styles.currencyToggle}>
@@ -225,8 +213,10 @@ export default function HomeScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-              <Text style={styles.logoutBtnText}>{t('logout')}</Text>
+
+            {/* Logout IconButton */}
+            <TouchableOpacity style={styles.logoutIconButton} onPress={logout}>
+              <Feather name="log-out" size={20} color="#D80000" />
             </TouchableOpacity>
           </View>
         </View>
@@ -247,21 +237,10 @@ export default function HomeScreen() {
 
         {/* Hero Banner */}
         <View style={styles.bannerContainer}>
-          <View style={styles.banner}>
-            {/* Decorative circles */}
-            <View style={styles.bannerCircle1} />
-            <View style={styles.bannerCircle2} />
-            <View style={styles.bannerCircle3} />
-            <View style={styles.bannerContent}>
-              <Text style={styles.bannerTitle}>{t('find_what_you_need')}</Text>
-              <Text style={styles.bannerSubtitle}>
-                {t('no_more_waiting')}
-              </Text>
-            </View>
-            <View style={styles.bannerImageContainer}>
-              <Feather name="shopping-cart" size={32} color="#fff" />
-            </View>
-          </View>
+          <Image
+            source={require('../../assets/hero_banner.png')}
+            style={styles.heroBannerImage}
+          />
         </View>
 
         {/* Category Section */}
@@ -382,24 +361,16 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 8,
   },
-  locationLabel: {
-    fontSize: 12,
-    color: '#E8601C',
-    fontWeight: '500',
-    marginBottom: 2,
+  logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    flex: 1,
+    marginLeft: -15,
   },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  locationPin: {
-    fontSize: 14,
-  },
-  locationText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A2E',
+  headerLogo: {
+    width: 120,
+    height: 48,
+    resizeMode: 'contain',
   },
   headerRight: {
     flexDirection: 'row',
@@ -428,19 +399,30 @@ const styles = StyleSheet.create({
   currencyBtnTextActive: {
     color: '#fff',
   },
-  logoutBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  iconCircleBtn: {
+    backgroundColor: '#FFE5EB', // Slight tint for language button
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+  },
+  langIconText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#E8601C'
+  },
+  logoutIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#FFE5E5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 4,
-  },
-  logoutBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#D80000',
+    marginLeft: 2,
   },
 
   // Search
@@ -472,70 +454,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 24,
   },
-  banner: {
-    backgroundColor: '#E8601C',
+  heroBannerImage: {
+    width: '100%',
+    height: 180,
     borderRadius: 20,
-    padding: 24,
-    overflow: 'hidden',
-    minHeight: 160,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  bannerCircle1: {
-    position: 'absolute',
-    top: -30,
-    right: -20,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  bannerCircle2: {
-    position: 'absolute',
-    bottom: -40,
-    left: 40,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  bannerCircle3: {
-    position: 'absolute',
-    top: 20,
-    left: -20,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  bannerContent: {
-    flex: 1,
-    zIndex: 1,
-  },
-  bannerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#fff',
-    marginBottom: 8,
-    lineHeight: 28,
-  },
-  bannerSubtitle: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.85)',
-    lineHeight: 16,
-    maxWidth: '85%',
-  },
-  bannerImageContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  bannerEmoji: {
-    fontSize: 36,
+    resizeMode: 'cover',
   },
 
   // Categories

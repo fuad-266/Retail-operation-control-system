@@ -80,7 +80,9 @@ const translations: Record<string, Record<string, string>> = {
         subtotal: 'Subtotal',
         delivery_fee: 'Delivery Fee',
         place_order: 'Place Order',
-        free: 'Free'
+        free: 'Free',
+        sent_by_messenger: 'Sent by Messenger',
+        back: 'Back'
     },
     am: {
         location: 'አካባቢ',
@@ -148,7 +150,9 @@ const translations: Record<string, Record<string, string>> = {
         subtotal: 'ንዑስ ድምር',
         delivery_fee: 'የማድረሻ ክፍያ',
         place_order: 'ትዕዛዝ ያስገቡ',
-        free: 'ነፃ'
+        free: 'ነፃ',
+        sent_by_messenger: 'በመልእክተኛ የተላከ',
+        back: 'ተመለስ'
     }
 }
 

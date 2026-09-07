@@ -15,6 +15,7 @@ import { StackNavigationProp } from '@react-navigation/stack'
 import { useQuery } from '@tanstack/react-query'
 import { RootStackParamList } from '../navigation/AppStack'
 import { ordersService } from '../services/orders.service'
+import { useLanguage } from '../context/LanguageContext'
 import { useCurrency } from '../context/CurrencyContext'
 import api from '../services/api'
 
@@ -37,10 +38,10 @@ const getStatusColor = (status: string) => {
   }
 }
 
-const getStatusText = (status: string) => {
+const getStatusText = (status: string, t: (key: string) => string) => {
   switch (status) {
-    case 'PENDING': return 'Pending Payment'
-    case 'PAYMENT_SUBMITTED': return 'Payment Submitted'
+    case 'PENDING': return t('payment') // localized part
+    case 'PAYMENT_SUBMITTED': return t('payment') + ' Submitted'
     case 'APPROVED': return 'Approved'
     case 'REJECTED': return 'Rejected'
     case 'DELIVERED': return 'Delivered'
@@ -66,6 +67,7 @@ export default function OrderDetailScreen() {
 
   const rate = exchangeRateData?.rate || 1
   const { formatPrice } = useCurrency()
+  const { t } = useLanguage()
 
   if (isLoading) {
     return (
@@ -84,7 +86,7 @@ export default function OrderDetailScreen() {
         <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
         <View style={styles.loadingContainer}>
           <Feather name="alert-circle" size={48} color="#D80000" style={{ marginBottom: 12 }} />
-          <Text style={styles.loadingText}>Order not found</Text>
+          <Text style={styles.loadingText}>{t('order_not_found')}</Text>
         </View>
       </SafeAreaView>
     )
@@ -99,7 +101,7 @@ export default function OrderDetailScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backBtnText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order Details</Text>
+        <Text style={styles.headerTitle}>{t('order_details')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -117,7 +119,7 @@ export default function OrderDetailScreen() {
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '18' }]}>
             <View style={[styles.statusDot, { backgroundColor: getStatusColor(order.status) }]} />
             <Text style={[styles.statusBadgeText, { color: getStatusColor(order.status) }]}>
-              {getStatusText(order.status)}
+              {getStatusText(order.status, t)}
             </Text>
           </View>
           <Text style={styles.statusDate}>
@@ -135,7 +137,7 @@ export default function OrderDetailScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Feather name="shopping-cart" size={18} color="#E8601C" style={{ marginRight: 8 }} />
-            <Text style={styles.cardTitle}>Order Items</Text>
+            <Text style={styles.cardTitle}>{t('order_items')}</Text>
           </View>
           {order.items.map((item) => (
             <View key={item.id} style={styles.itemRow}>
@@ -145,7 +147,7 @@ export default function OrderDetailScreen() {
                 </View>
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName}>{item.productName}</Text>
-                  <Text style={styles.itemQty}>Qty: {item.quantity} × {formatPrice(item.unitPrice, item.unitPrice / rate)}</Text>
+                  <Text style={styles.itemQty}>{t('qty')} {item.quantity} × {formatPrice(item.unitPrice, item.unitPrice / rate)}</Text>
                 </View>
               </View>
               <Text style={styles.itemTotal}>
@@ -156,7 +158,7 @@ export default function OrderDetailScreen() {
 
           <View style={styles.totalDivider} />
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total Amount</Text>
+            <Text style={styles.totalLabel}>{t('total_amount')}</Text>
             <Text style={styles.totalAmount}>{formatPrice(order.totalAmount, order.totalAmount / rate)}</Text>
           </View>
         </View>
@@ -165,7 +167,7 @@ export default function OrderDetailScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Feather name="map-pin" size={18} color="#E8601C" style={{ marginRight: 8 }} />
-            <Text style={styles.cardTitle}>Delivery Address</Text>
+            <Text style={styles.cardTitle}>{t('delivery_address')}</Text>
           </View>
           <View style={styles.addressBox}>
             <Text style={styles.addressText}>{order.deliveryAddress}</Text>
@@ -177,7 +179,7 @@ export default function OrderDetailScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Feather name="file-text" size={18} color="#E8601C" style={{ marginRight: 8 }} />
-              <Text style={styles.cardTitle}>Payment Reference</Text>
+              <Text style={styles.cardTitle}>{t('payment_reference')}</Text>
             </View>
             <View style={styles.refBox}>
               <Text style={styles.refText}>{order.paymentReference}</Text>
@@ -190,7 +192,7 @@ export default function OrderDetailScreen() {
           <View style={styles.rejectionCard}>
             <View style={styles.cardHeader}>
               <Feather name="alert-triangle" size={18} color="#EF5350" style={{ marginRight: 8 }} />
-              <Text style={[styles.cardTitle, { color: '#EF5350' }]}>Order Rejected</Text>
+              <Text style={[styles.cardTitle, { color: '#EF5350' }]}>{t('order_rejected')}</Text>
             </View>
             <Text style={styles.rejectionText}>{order.rejectionReason}</Text>
           </View>
@@ -204,7 +206,7 @@ export default function OrderDetailScreen() {
             activeOpacity={0.85}
           >
             <Feather name="upload" size={16} color="#fff" />
-            <Text style={styles.actionButtonText}>Upload Payment Screenshot</Text>
+            <Text style={styles.actionButtonText}>{t('upload_payment_screenshot')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>

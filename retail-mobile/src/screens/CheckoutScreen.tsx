@@ -13,9 +13,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { useMutation } from '@tanstack/react-query'
+import { Feather } from '@expo/vector-icons'
 import { RootStackParamList } from '../navigation/AppStack'
 import { useCart } from '../context/CartContext'
 import { useCurrency } from '../context/CurrencyContext'
+import { useLanguage } from '../context/LanguageContext'
 import { ordersService } from '../services/orders.service'
 
 type CheckoutScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Checkout'>
@@ -26,7 +28,8 @@ export default function CheckoutScreen() {
   const navigation = useNavigation<CheckoutScreenNavigationProp>()
   const insets = useSafeAreaInsets()
   const { items, getTotalPrice, clearCart } = useCart()
-  const { currency, formatPrice, getPrice } = useCurrency()
+  const { currency, formatPrice } = useCurrency()
+  const { t } = useLanguage()
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('MOBILE_MONEY')
 
@@ -93,16 +96,16 @@ export default function CheckoutScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={styles.backButton}>← {t('back')}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Checkout</Text>
+        <Text style={styles.headerTitle}>{t('checkout')}</Text>
         <View style={{ width: 50 }} />
       </View>
 
       <ScrollView style={styles.scrollView}>
         {/* Order Summary */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Summary</Text>
+          <Text style={styles.sectionTitle}>{t('order_summary')}</Text>
           {items.map(item => (
             <View key={item.id} style={styles.summaryItem}>
               <Text style={styles.summaryItemName}>
@@ -114,16 +117,10 @@ export default function CheckoutScreen() {
             </View>
           ))}
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total:</Text>
+            <Text style={styles.totalLabel}>{t('total_label')}</Text>
             <View>
               <Text style={styles.totalAmount}>
                 {formatPrice(getTotalPrice('KES'), getTotalPrice('ETB'))}
-              </Text>
-              <Text style={styles.totalSecondary}>
-                {currency === 'KES'
-                  ? `ETB ${getTotalPrice('ETB').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                  : `KES ${getTotalPrice('KES').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                }
               </Text>
             </View>
           </View>
@@ -131,10 +128,10 @@ export default function CheckoutScreen() {
 
         {/* Delivery Address */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Delivery Address</Text>
+          <Text style={styles.sectionTitle}>{t('delivery_address')}</Text>
           <TextInput
             style={styles.addressInput}
-            placeholder="Enter your full delivery address"
+            placeholder={t('enter_address')}
             multiline
             numberOfLines={4}
             value={deliveryAddress}
@@ -145,8 +142,7 @@ export default function CheckoutScreen() {
 
         {/* Payment Method Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment Method</Text>
-          <Text style={styles.helperText}>Select how you will pay for this order</Text>
+          <Text style={styles.sectionTitle}>{t('payment_method')}</Text>
 
           <TouchableOpacity
             style={[
@@ -159,7 +155,7 @@ export default function CheckoutScreen() {
               {paymentMethod === 'BANK_TRANSFER' && <View style={styles.radioButtonInner} />}
             </View>
             <View style={styles.paymentOptionContent}>
-              <Text style={styles.paymentOptionTitle}>Bank Transfer</Text>
+              <Text style={styles.paymentOptionTitle}>{t('bank_transfer')}</Text>
               <Text style={styles.paymentOptionDescription}>
                 Transfer to our bank account and upload proof of payment
               </Text>
@@ -177,7 +173,7 @@ export default function CheckoutScreen() {
               {paymentMethod === 'MOBILE_MONEY' && <View style={styles.radioButtonInner} />}
             </View>
             <View style={styles.paymentOptionContent}>
-              <Text style={styles.paymentOptionTitle}>Mobile Money</Text>
+              <Text style={styles.paymentOptionTitle}>{t('mobile_money')}</Text>
               <Text style={styles.paymentOptionDescription}>
                 Pay via M-PESA or similar and upload confirmation screenshot
               </Text>
@@ -195,41 +191,12 @@ export default function CheckoutScreen() {
               {paymentMethod === 'MESSENGER' && <View style={styles.radioButtonInner} />}
             </View>
             <View style={styles.paymentOptionContent}>
-              <Text style={styles.paymentOptionTitle}>Sent by Messenger</Text>
+              <Text style={styles.paymentOptionTitle}>{t('sent_by_messenger')}</Text>
               <Text style={styles.paymentOptionDescription}>
                 We'll contact you via messenger for payment arrangement
               </Text>
             </View>
           </TouchableOpacity>
-        </View>
-
-        {/* Payment Instructions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What happens next?</Text>
-          <View style={styles.infoBox}>
-            {paymentMethod === 'BANK_TRANSFER' || paymentMethod === 'MOBILE_MONEY' ? (
-              <>
-                <Text style={styles.infoText}>
-                  After placing your order, you will be directed to the payment instructions screen.
-                </Text>
-                <Text style={styles.infoText}>
-                  You'll need to make the payment and upload a screenshot of the confirmation.
-                </Text>
-                <Text style={styles.infoText}>
-                  Our cashier will verify your payment and process your order.
-                </Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.infoText}>
-                  After placing your order, our team will contact you via messenger.
-                </Text>
-                <Text style={styles.infoText}>
-                  We'll arrange the payment details and delivery schedule with you directly.
-                </Text>
-              </>
-            )}
-          </View>
         </View>
       </ScrollView>
 
@@ -244,7 +211,7 @@ export default function CheckoutScreen() {
             <ActivityIndicator color="white" />
           ) : (
             <Text style={styles.placeOrderButtonText}>
-              Place Order - {formatPrice(getTotalPrice('KES'), getTotalPrice('ETB'))}
+              {t('place_order')} - {formatPrice(getTotalPrice('KES'), getTotalPrice('ETB'))}
             </Text>
           )}
         </TouchableOpacity>

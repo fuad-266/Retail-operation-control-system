@@ -16,6 +16,7 @@ import { RootStackParamList } from '../navigation/AppStack'
 import { ordersService, OnlineOrderDto } from '../services/orders.service'
 import BottomNav from '../components/BottomNav'
 import { useCurrency } from '../context/CurrencyContext'
+import { useLanguage } from '../context/LanguageContext'
 import api from '../services/api'
 
 type MyOrdersScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Orders'>
@@ -43,14 +44,14 @@ const getStatusColor = (status: string) => {
   }
 }
 
-const getStatusText = (status: string) => {
+const getStatusText = (status: string, t: (key: string) => string) => {
   switch (status) {
     case 'PENDING_PAYMENT':
-      return 'Pending Payment'
+      return t('payment')
     case 'SCREENSHOT_SUBMITTED':
-      return 'Payment Submitted'
+      return t('payment') + ' Submitted' // simplified
     case 'PAYMENT_REJECTED':
-      return 'Payment Rejected'
+      return t('order_rejected')
     case 'PAID':
       return 'Paid'
     case 'PROCESSING':
@@ -81,6 +82,7 @@ export default function MyOrdersScreen() {
 
   const rate = exchangeRateData?.rate || 1
   const { formatPrice } = useCurrency()
+  const { t } = useLanguage()
 
   const renderOrderItem = ({ item }: { item: OnlineOrderDto }) => {
     const priceKes = item.totalAmount || 0
@@ -94,7 +96,7 @@ export default function MyOrdersScreen() {
         <View style={styles.orderHeader}>
           <Text style={styles.orderId}>Order #{item.id.slice(0, 8)}</Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-            <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+            <Text style={styles.statusText}>{getStatusText(item.status, t)}</Text>
           </View>
         </View>
 
@@ -121,13 +123,13 @@ export default function MyOrdersScreen() {
               navigation.navigate('PaymentUpload', { orderId: item.id, amountKes: item.totalAmount })
             }}
           >
-            <Text style={styles.payButtonText}>Upload Payment</Text>
+            <Text style={styles.payButtonText}>{t('upload_payment')}</Text>
           </TouchableOpacity>
         )}
 
         {item.status === 'PAYMENT_REJECTED' && item.rejectionReason && (
           <View style={styles.rejectionBox}>
-            <Text style={styles.rejectionLabel}>Rejection Reason:</Text>
+            <Text style={styles.rejectionLabel}>{t('rejection_reason')}</Text>
             <Text style={styles.rejectionText}>{item.rejectionReason}</Text>
           </View>
         )}
@@ -138,7 +140,7 @@ export default function MyOrdersScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text>Loading orders...</Text>
+        <Text>{t('loading_orders')}</Text>
       </SafeAreaView>
     )
   }
@@ -146,19 +148,19 @@ export default function MyOrdersScreen() {
   return (
     <SafeAreaView style={styles.container} >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Orders</Text>
+        <Text style={styles.headerTitle}>{t('my_orders')}</Text>
       </View>
 
       {orders && orders.length === 0 ? (
         <View style={styles.emptyState}>
           <Feather name="box" size={64} color="#999" style={{ marginBottom: 16 }} />
-          <Text style={styles.emptyTitle}>No Orders Yet</Text>
-          <Text style={styles.emptyText}>Start shopping to place your first order</Text>
+          <Text style={styles.emptyTitle}>{t('no_orders_yet')}</Text>
+          <Text style={styles.emptyText}>{t('start_shopping_to_place')}</Text>
           <TouchableOpacity
             style={styles.shopButton}
             onPress={() => navigation.navigate('Home')}
           >
-            <Text style={styles.shopButtonText}>Start Shopping</Text>
+            <Text style={styles.shopButtonText}>{t('start_shopping')}</Text>
           </TouchableOpacity>
         </View>
       ) : (

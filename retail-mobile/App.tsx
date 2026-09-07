@@ -11,6 +11,7 @@ import { AuthProvider } from './src/context/AuthContext'
 import { CartProvider } from './src/context/CartContext'
 import { CurrencyProvider } from './src/context/CurrencyContext'
 import { FavoritesProvider } from './src/context/FavoritesContext'
+import { LanguageProvider } from './src/context/LanguageContext'
 import { AppStack } from './src/navigation/AppStack'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -22,16 +23,18 @@ export default function App() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <CurrencyProvider>
-            <CartProvider>
-              <FavoritesProvider>
-                <NavigationContainer>
-                  <AppStack />
-                  <StatusBar style="auto" />
-                </NavigationContainer>
-              </FavoritesProvider>
-            </CartProvider>
-          </CurrencyProvider>
+          <LanguageProvider>
+            <CurrencyProvider>
+              <CartProvider>
+                <FavoritesProvider>
+                  <NavigationContainer>
+                    <AppStack />
+                    <StatusBar style="auto" />
+                  </NavigationContainer>
+                </FavoritesProvider>
+              </CartProvider>
+            </CurrencyProvider>
+          </LanguageProvider>
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

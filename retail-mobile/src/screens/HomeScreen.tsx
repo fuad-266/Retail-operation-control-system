@@ -23,6 +23,7 @@ import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useCurrency } from '../context/CurrencyContext'
 import { useFavorites } from '../context/FavoritesContext'
+import { useLanguage } from '../context/LanguageContext'
 import BottomNav from '../components/BottomNav'
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>
@@ -49,6 +50,7 @@ export default function HomeScreen() {
   const { logout } = useAuth()
   const { getTotalItems, addToCart } = useCart()
   const { currency, setCurrency, formatPrice } = useCurrency()
+  const { language, setLanguage, t } = useLanguage()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const { toggleFavorite, isFavorite } = useFavorites()
@@ -147,7 +149,7 @@ export default function HomeScreen() {
           <View style={styles.loadingSpinner}>
             <Feather name="shopping-bag" size={40} color="#E8601C" />
           </View>
-          <Text style={styles.loadingText}>Loading products...</Text>
+          <Text style={styles.loadingText}>{t('loading')}</Text>
         </View>
       </SafeAreaView>
     )
@@ -177,13 +179,33 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.locationLabel}>Location</Text>
+            <Text style={styles.locationLabel}>{t('location')}</Text>
             <View style={styles.locationRow}>
               <Feather name="map-pin" size={14} color="#1A1A2E" />
-              <Text style={styles.locationText}>Welcome to Shop</Text>
+              <Text style={styles.locationText}>{t('welcome')}</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
+            {/* Language Toggle */}
+            <View style={styles.currencyToggle}>
+              <TouchableOpacity
+                style={[styles.currencyBtn, language === 'en' && styles.currencyBtnActive]}
+                onPress={() => setLanguage('en')}
+              >
+                <Text style={[styles.currencyBtnText, language === 'en' && styles.currencyBtnTextActive]}>
+                  EN
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.currencyBtn, language === 'am' && styles.currencyBtnActive]}
+                onPress={() => setLanguage('am')}
+              >
+                <Text style={[styles.currencyBtnText, language === 'am' && styles.currencyBtnTextActive]}>
+                  አማ
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Currency Toggle */}
             <View style={styles.currencyToggle}>
               <TouchableOpacity
@@ -204,7 +226,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-              <Text style={styles.logoutBtnText}>Logout</Text>
+              <Text style={styles.logoutBtnText}>{t('logout')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -215,7 +237,7 @@ export default function HomeScreen() {
             <Feather name="search" size={16} color="#999" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search"
+              placeholder={t('search')}
               placeholderTextColor="#999"
               value={searchTerm}
               onChangeText={setSearchTerm}
@@ -231,9 +253,9 @@ export default function HomeScreen() {
             <View style={styles.bannerCircle2} />
             <View style={styles.bannerCircle3} />
             <View style={styles.bannerContent}>
-              <Text style={styles.bannerTitle}>Find What You{'\n'}Need, Nearby</Text>
+              <Text style={styles.bannerTitle}>{t('find_what_you_need')}</Text>
               <Text style={styles.bannerSubtitle}>
-                No more waiting days. Get items close to you for faster delivery or pickup.
+                {t('no_more_waiting')}
               </Text>
             </View>
             <View style={styles.bannerImageContainer}>
@@ -244,7 +266,7 @@ export default function HomeScreen() {
 
         {/* Category Section */}
         <View style={styles.categorySection}>
-          <Text style={styles.sectionTitle}>Category</Text>
+          <Text style={styles.sectionTitle}>{t('category')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.categoryGrid}>
               {categories.map((cat) => (
@@ -278,11 +300,11 @@ export default function HomeScreen() {
         <View style={styles.productsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
-              {selectedCategory === 'all' ? 'Near you' : selectedCategory}
+              {selectedCategory === 'all' ? t('near_you') : selectedCategory}
             </Text>
             {selectedCategory !== 'all' && (
               <TouchableOpacity onPress={() => setSelectedCategory('all')}>
-                <Text style={styles.seeAllText}>See All</Text>
+                <Text style={styles.seeAllText}>{t('see_all')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -298,9 +320,9 @@ export default function HomeScreen() {
           {filteredProducts.length === 0 && (
             <View style={styles.emptyProducts}>
               <Feather name="search" size={48} color="#999" style={{ marginBottom: 12 }} />
-              <Text style={styles.emptyProductsTitle}>No products found</Text>
+              <Text style={styles.emptyProductsTitle}>{t('no_products')}</Text>
               <Text style={styles.emptyProductsText}>
-                Try a different search or category
+                {t('try_different')}
               </Text>
             </View>
           )}

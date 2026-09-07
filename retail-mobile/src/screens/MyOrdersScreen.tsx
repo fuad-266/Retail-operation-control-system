@@ -15,6 +15,8 @@ import { useQuery } from '@tanstack/react-query'
 import { RootStackParamList } from '../navigation/AppStack'
 import { ordersService, OnlineOrderDto } from '../services/orders.service'
 import BottomNav from '../components/BottomNav'
+import { useCurrency } from '../context/CurrencyContext'
+import api from '../services/api'
 
 type MyOrdersScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Orders'>
 
@@ -72,51 +74,66 @@ export default function MyOrdersScreen() {
     queryFn: ordersService.getMyOrders,
   })
 
-  const renderOrderItem = ({ item }: { item: OnlineOrderDto }) => (
-    <TouchableOpacity
-      style={styles.orderCard}
-      onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
-    >
-      <View style={styles.orderHeader}>
-        <Text style={styles.orderId}>Order #{item.id.slice(0, 8)}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+  const { data: exchangeRateData } = useQuery({
+    queryKey: ['exchangeRate'],
+    queryFn: () => api.get('/settings/exchange-rate').then((r) => r.data),
+  })
+
+  const rate = exchangeRateData?.rate || 1
+  const { formatPrice } = useCurrency()
+
+  const renderOrderItem = ({ item }: { item: OnlineOrderDto }) => {
+    const priceKes = item.totalAmount || 0
+    const priceEtb = priceKes / rate
+
+    return (
+      <TouchableOpacity
+        style={styles.orderCard}
+        onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
+      >
+        <View style={styles.orderHeader}>
+          <Text style={styles.orderId}>Order #{item.id.slice(0, 8)}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.orderDetails}>
-        <Text style={styles.orderDate}>
-          {new Date(item.createdAt).toLocaleDateString('en-GB', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          })}
-        </Text>
-        <Text style={styles.orderTotal}>KES {item.totalAmount.toLocaleString()}</Text>
-      </View>
-
-      <Text style={styles.itemCount}>{item.items.length} item(s)</Text>
-
-      {item.status === 'PENDING_PAYMENT' && (
-        <TouchableOpacity
-          style={styles.payButton}
-          onPress={(e) => {
-            e.stopPropagation()
-            navigation.navigate('PaymentUpload', { orderId: item.id, amountKes: item.totalAmount })
-          }}
-        >
-          <Text style={styles.payButtonText}>Upload Payment</Text>
-        </TouchableOpacity>
-      )}
-
-      {item.status === 'PAYMENT_REJECTED' && item.rejectionReason && (
-        <View style={styles.rejectionBox}>
-          <Text style={styles.rejectionLabel}>Rejection Reason:</Text>
-          <Text style={styles.rejectionText}>{item.rejectionReason}</Text>
+        <View style={styles.orderDetails}>
+          <Text style={styles.orderDate}>
+            {new Date(item.createdAt).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric'
+            })}
+          </Text>
+          <Text style={styles.orderTotal}>
+            {formatPrice(priceKes, priceEtb)}
+          </Text>
         </View>
-      )}
-    </TouchableOpacity>
-  )
+
+        <Text style={styles.itemCount}>{item.items.length} item(s)</Text>
+
+        {item.status === 'PENDING_PAYMENT' && (
+          <TouchableOpacity
+            style={styles.payButton}
+            onPress={(e) => {
+              e.stopPropagation()
+              navigation.navigate('PaymentUpload', { orderId: item.id, amountKes: item.totalAmount })
+            }}
+          >
+            <Text style={styles.payButtonText}>Upload Payment</Text>
+          </TouchableOpacity>
+        )}
+
+        {item.status === 'PAYMENT_REJECTED' && item.rejectionReason && (
+          <View style={styles.rejectionBox}>
+            <Text style={styles.rejectionLabel}>Rejection Reason:</Text>
+            <Text style={styles.rejectionText}>{item.rejectionReason}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -127,7 +144,7 @@ export default function MyOrdersScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Orders</Text>
       </View>
@@ -156,7 +173,7 @@ export default function MyOrdersScreen() {
         />
       )}
       <BottomNav activeTab="Orders" />
-    </SafeAreaView>
+    </SafeAreaView >
   )
 }
 const styles = StyleSheet.create({

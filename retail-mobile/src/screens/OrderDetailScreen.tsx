@@ -15,6 +15,8 @@ import { StackNavigationProp } from '@react-navigation/stack'
 import { useQuery } from '@tanstack/react-query'
 import { RootStackParamList } from '../navigation/AppStack'
 import { ordersService } from '../services/orders.service'
+import { useCurrency } from '../context/CurrencyContext'
+import api from '../services/api'
 
 type OrderDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'OrderDetail'>
 type OrderDetailScreenRouteProp = {
@@ -56,6 +58,14 @@ export default function OrderDetailScreen() {
     queryKey: ['order', orderId],
     queryFn: () => ordersService.getOrder(orderId),
   })
+
+  const { data: exchangeRateData } = useQuery({
+    queryKey: ['exchangeRate'],
+    queryFn: () => api.get('/settings/exchange-rate').then((r) => r.data),
+  })
+
+  const rate = exchangeRateData?.rate || 1
+  const { formatPrice } = useCurrency()
 
   if (isLoading) {
     return (
@@ -135,11 +145,11 @@ export default function OrderDetailScreen() {
                 </View>
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName}>{item.productName}</Text>
-                  <Text style={styles.itemQty}>Qty: {item.quantity} × KES {item.unitPrice.toLocaleString()}</Text>
+                  <Text style={styles.itemQty}>Qty: {item.quantity} × {formatPrice(item.unitPrice, item.unitPrice / rate)}</Text>
                 </View>
               </View>
               <Text style={styles.itemTotal}>
-                KES {(item.unitPrice * item.quantity).toLocaleString()}
+                {formatPrice(item.unitPrice * item.quantity, (item.unitPrice * item.quantity) / rate)}
               </Text>
             </View>
           ))}
@@ -147,7 +157,7 @@ export default function OrderDetailScreen() {
           <View style={styles.totalDivider} />
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Amount</Text>
-            <Text style={styles.totalAmount}>KES {order.totalAmount.toLocaleString()}</Text>
+            <Text style={styles.totalAmount}>{formatPrice(order.totalAmount, order.totalAmount / rate)}</Text>
           </View>
         </View>
 

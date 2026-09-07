@@ -8,6 +8,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { useMutation } from '@tanstack/react-query'
@@ -22,7 +23,6 @@ const clearAllData = async () => {
     console.warn('clearAllData error:', e)
   }
 }
-
 
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -63,9 +63,17 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
+
         <Text style={styles.title}>Welcome Back</Text>
         <Text style={styles.subtitle}>
-          Sign in to your customer account
+          Sign in to your Adama account
         </Text>
 
         <View style={styles.form}>
@@ -78,6 +86,7 @@ export default function LoginScreen() {
               placeholder="Enter your phone number"
               keyboardType="phone-pad"
               autoCapitalize="none"
+              placeholderTextColor="#999"
             />
           </View>
 
@@ -89,6 +98,7 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               placeholder="Enter your password"
               secureTextEntry
+              placeholderTextColor="#999"
             />
           </View>
 
@@ -96,6 +106,7 @@ export default function LoginScreen() {
             style={[styles.loginButton, isPending && styles.loginButtonDisabled]}
             onPress={handleLogin}
             disabled={isPending}
+            activeOpacity={0.8}
           >
             <Text style={styles.loginButtonText}>
               {isPending ? 'Signing In...' : 'Sign In'}
@@ -115,7 +126,7 @@ export default function LoginScreen() {
             Alert.alert('Success', 'All stored data cleared. App will now show login screen on next launch.')
           }}
         >
-          <Text style={styles.clearDataButtonText}>Clear Stored Data (Dev)</Text>
+          <Text style={styles.clearDataButtonText}>Clear Stored Data</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -125,25 +136,38 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FAFAFA',
   },
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 28,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 4,
+  },
+  logo: {
+    width: 220,
+    height: 160,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1A1A2E',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
+    fontSize: 15,
+    color: '#666',
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 36,
   },
   form: {
     marginBottom: 32,
@@ -168,10 +192,15 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   loginButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#E8601C',
     borderRadius: 12,
     paddingVertical: 16,
     marginTop: 8,
+    shadowColor: '#E8601C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   loginButtonDisabled: {
     opacity: 0.5,

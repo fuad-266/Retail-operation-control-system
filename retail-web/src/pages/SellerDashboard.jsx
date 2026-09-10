@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { productService, orderService, userService } from '../services/endpoints';
 import {
@@ -10,7 +10,6 @@ import {
     UserPlus,
     X,
     Send,
-    AlertCircle,
     CheckCircle,
     Clock,
     XCircle,
@@ -22,13 +21,20 @@ import {
     Grid,
     Edit2,
     User,
+    TrendingUp,
+    Hash,
+    DollarSign,
+    ArrowRight,
+    Zap,
+    BarChart3,
+    Eye,
 } from 'lucide-react';
 
 export default function SellerDashboard() {
-    const { currency, exchangeRate } = useAuth();
+    const { currency } = useAuth();
 
     // ─── View Tab ───────────────────────────
-    const [activeTab, setActiveTab] = useState('pos'); // 'pos' | 'history'
+    const [activeTab, setActiveTab] = useState('pos'); // 'pos' | 'history' | 'insights'
 
     // ─── Product Catalog ────────────────────
     const [products, setProducts] = useState([]);
@@ -50,12 +56,16 @@ export default function SellerDashboard() {
     // ─── My Orders State ────────────────────
     const [orders, setOrders] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(true);
+    const [orderFilter, setOrderFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'PAID' | 'CANCELLED'
 
     // ─── Add Customer Modal State ───────────
     const [customerModal, setCustomerModal] = useState(false);
     const [custForm, setCustForm] = useState({ fullName: '', phoneNumber: '', email: '', password: '' });
     const [custMsg, setCustMsg] = useState({ type: '', text: '' });
     const [custLoading, setCustLoading] = useState(false);
+
+    // ─── Refs ───────────────────────────────
+    const searchRef = useRef(null);
 
     useEffect(() => {
         fetchProducts();
@@ -93,6 +103,33 @@ export default function SellerDashboard() {
             return matchSearch && matchCategory;
         });
     }, [products, prodSearch, selectedCategory]);
+
+    // ─── Filtered Orders ────────────────────
+    const filteredOrders = useMemo(() => {
+        if (orderFilter === 'ALL') return orders;
+        return orders.filter(o => o.status === orderFilter);
+    }, [orders, orderFilter]);
+
+    // ─── Insights ───────────────────────────
+    const insights = useMemo(() => {
+        const today = new Date().toDateString();
+        const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today);
+        const paidOrders = orders.filter(o => o.status === 'PAID');
+        const pendingOrders = orders.filter(o => o.status === 'PENDING');
+        const todayRevenue = todayOrders
+            .filter(o => o.status === 'PAID')
+            .reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+        const totalItems = orders.reduce((sum, o) => sum + (o.items?.length || 0), 0);
+
+        return {
+            totalOrders: orders.length,
+            todayOrders: todayOrders.length,
+            paidOrders: paidOrders.length,
+            pendingOrders: pendingOrders.length,
+            todayRevenue,
+            totalItems,
+        };
+    }, [orders]);
 
     // ─── Open Item Configuration Modal ──────
     const handleOpenItemModal = (product) => {
@@ -165,39 +202,39 @@ export default function SellerDashboard() {
     };
 
     // ─── Total Calculation ──────────────────
+    const cartTotalKes = useMemo(() => {
+        return cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+    }, [cart]);
+
     const displayTotal = useMemo(() => {
-        const totalKes = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
         const totalEtb = cart.reduce((sum, item) => {
             const etbComponent = item.isOverride ? 0 : (item.priceEtb * item.quantity);
             return sum + etbComponent;
         }, 0);
 
-        // If the cart has overrides, we can't reliably show a pure backend ETB total without a live backend calc.
-        // It's safest to rely primarily on KES or indicate manual pricing isn't fully converted in real-time.
-        // But since the API will always return ETB for the cashier, we just format the subtotal of what we know.
         const hasOverrides = cart.some(c => c.isOverride);
 
         if (currency === 'ETB' && !hasOverrides) {
-            return `ETB ${totalEtb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            return `Br ${totalEtb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
         if (currency === 'ETB' && hasOverrides) {
-            return `ETB (Manual KES OVERRIDE)`; // No live frontend math allowed per instruction 4
+            return `Br (Manual Override)`;
         }
-        return `KES ${totalKes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }, [cart, currency]);
+        return `Br ${cartTotalKes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }, [cart, currency, cartTotalKes]);
 
     const formatPrice = (priceKes, priceEtb) => {
         if (currency === 'ETB' && priceEtb != null) {
-            return `ETB ${Number(priceEtb).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+            return `Br ${Number(priceEtb).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
         }
-        return `KES ${Number(priceKes).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        return `Br ${Number(priceKes).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
     };
 
     // ─── Order Submission ───────────────────
     const handleSubmitOrder = async () => {
         if (cart.length === 0) return;
         if (!customerName.trim()) {
-            setSubmitMsg({ type: 'error', text: 'Please enter the Customer Name / Identifier so the Cashier can identify this order.' });
+            setSubmitMsg({ type: 'error', text: 'Please enter the Customer Name so the Cashier can identify this order.' });
             return;
         }
         setSubmitMsg({ type: '', text: '' });
@@ -215,7 +252,7 @@ export default function SellerDashboard() {
                 customerName: customerName.trim(),
             });
 
-            setSubmitMsg({ type: 'success', text: `✅ Order created for "${customerName.trim()}" & sent to Cashier!` });
+            setSubmitMsg({ type: 'success', text: `Order created for "${customerName.trim()}" & sent to Cashier!` });
 
             setTimeout(() => {
                 clearCart();
@@ -266,401 +303,492 @@ export default function SellerDashboard() {
 
     const statusBadge = (status) => {
         switch (status) {
-            case 'PENDING': return <span className="status-badge pending"><Clock size={14} /> Pending Payment</span>;
-            case 'PAID': return <span className="status-badge paid"><CheckCircle size={14} /> Paid</span>;
-            case 'CANCELLED': return <span className="status-badge cancelled"><XCircle size={14} /> Cancelled</span>;
-            default: return <span className="status-badge">{status}</span>;
+            case 'PENDING': return <span className="sd-status-badge sd-status-pending"><Clock size={13} /> Pending</span>;
+            case 'PAID': return <span className="sd-status-badge sd-status-paid"><CheckCircle size={13} /> Paid</span>;
+            case 'CANCELLED': return <span className="sd-status-badge sd-status-cancelled"><XCircle size={13} /> Cancelled</span>;
+            default: return <span className="sd-status-badge">{status}</span>;
         }
     };
 
+    const cartItemCount = cart.reduce((sum, c) => sum + c.quantity, 0);
+
     return (
-        <div className="pos-dashboard" id="seller-dashboard">
-            {/* Top POS Header */}
-            <div className="pos-header">
-                <div className="pos-header-title">
-                    <h1>Seller POS Terminal</h1>
-                    <p className="page-subtitle">Add items, set customer name, and send order directly to Cashier</p>
+        <div className="sd-root" id="seller-dashboard">
+            {/* ─── Top Header Bar ─── */}
+            <header className="sd-topbar">
+                <div className="sd-topbar-left">
+                    <div className="sd-topbar-icon">
+                        <Zap size={22} />
+                    </div>
+                    <div>
+                        <h1 className="sd-topbar-title">Seller Terminal</h1>
+                        <p className="sd-topbar-sub">Build order → Send to cashier → Track status</p>
+                    </div>
                 </div>
 
-                {/* View Switcher */}
-                <div className="pos-tab-switcher">
+                <nav className="sd-tab-nav">
                     <button
-                        className={`pos-tab-btn ${activeTab === 'pos' ? 'active' : ''}`}
+                        className={`sd-tab ${activeTab === 'pos' ? 'active' : ''}`}
                         onClick={() => setActiveTab('pos')}
                         id="tab-pos"
                     >
-                        <Grid size={18} />
+                        <Grid size={16} />
                         <span>Create Sale</span>
+                        {cart.length > 0 && <span className="sd-tab-badge">{cartItemCount}</span>}
                     </button>
                     <button
-                        className={`pos-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+                        className={`sd-tab ${activeTab === 'history' ? 'active' : ''}`}
                         onClick={() => { setActiveTab('history'); fetchOrders(); }}
                         id="tab-history"
                     >
-                        <History size={18} />
+                        <History size={16} />
                         <span>My Orders</span>
                         {orders.filter(o => o.status === 'PENDING').length > 0 && (
-                            <span className="pos-badge">
+                            <span className="sd-tab-badge warn">
                                 {orders.filter(o => o.status === 'PENDING').length}
                             </span>
                         )}
                     </button>
-                </div>
+                    <button
+                        className={`sd-tab ${activeTab === 'insights' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('insights'); fetchOrders(); }}
+                        id="tab-insights"
+                    >
+                        <BarChart3 size={16} />
+                        <span>Insights</span>
+                    </button>
+                </nav>
 
                 <button
-                    className="btn btn-outline"
+                    className="sd-add-customer-btn"
                     onClick={() => { setCustomerModal(true); setCustMsg({ type: '', text: '' }); }}
                     id="add-customer-btn"
                 >
-                    <UserPlus size={18} /> Add Customer Account
+                    <UserPlus size={16} />
+                    <span>New Customer</span>
                 </button>
-            </div>
+            </header>
 
-            {activeTab === 'pos' ? (
-                /* ─── Full Page POS Layout ─── */
-                <div className="wholesale-workspace">
-                    {/* Top Bar: Goods / Products Search Bar */}
-                    <div className="wholesale-search-bar">
-                        <div className="search-input-box">
-                            <label htmlFor="seller-product-search">
-                                <Search size={20} className="text-accent-primary" />
-                                <span>SEARCH GOODS / PRODUCTS *</span>
-                            </label>
-                            <div className="search-field-wrapper">
+            {/* ═══════════════════════════════════════ */}
+            {/* ─── POS TAB ─── */}
+            {/* ═══════════════════════════════════════ */}
+            {activeTab === 'pos' && (
+                <div className="sd-pos-layout">
+                    {/* LEFT: Product Catalog */}
+                    <section className="sd-catalog">
+                        {/* Search Bar */}
+                        <div className="sd-search-card">
+                            <div className="sd-search-row">
+                                <Search size={18} className="sd-search-icon" />
                                 <input
+                                    ref={searchRef}
                                     id="seller-product-search"
                                     type="text"
                                     value={prodSearch}
                                     onChange={(e) => setProdSearch(e.target.value)}
-                                    placeholder="Type product name or category to search (e.g. Maize, Flour, Sugar, Wireless Mouse)…"
-                                    className="wholesale-search-input"
+                                    placeholder="Search products (e.g. Teff, Berbere, Coffee, Oil)…"
+                                    className="sd-search-input"
                                 />
                                 {prodSearch && (
-                                    <button className="btn-icon clear-search-btn" onClick={() => setProdSearch('')}>
-                                        <X size={18} />
+                                    <button className="sd-search-clear" onClick={() => { setProdSearch(''); searchRef.current?.focus(); }}>
+                                        <X size={16} />
                                     </button>
                                 )}
                             </div>
-                        </div>
 
-                        {/* Category Filter Pills in Top Bar */}
-                        <div className="category-pills top-pills">
-                            {categories.map(cat => (
-                                <button
-                                    key={cat}
-                                    className={`category-pill ${selectedCategory === cat ? 'active' : ''}`}
-                                    onClick={() => setSelectedCategory(cat)}
-                                >
-                                    {cat}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Main Workspace: Left Catalog List Rows | Right Order Cart */}
-                    <div className="wholesale-grid">
-                        {/* Left Column: Horizontal Row List of Goods (Not Box Cards) */}
-                        <div className="wholesale-catalog-col">
-                            <div className="catalog-header-info">
-                                <h3>Available Inventory ({filteredProducts.length} items)</h3>
-                                <span className="subtitle">Click any row to configure quantity and add to order sheet</span>
-                            </div>
-
-                            {/* Goods Row List (Diagonal / Horizontal Rows, NOT Grid Boxes) */}
-                            <div className="pos-product-row-list">
-                                {prodLoading ? (
-                                    <div className="table-skeleton">
-                                        {[...Array(6)].map((_, i) => <div key={i} className="skeleton-row" />)}
-                                    </div>
-                                ) : filteredProducts.length === 0 ? (
-                                    <div className="empty-state">
-                                        <Package size={48} />
-                                        <h3>No goods found matching search</h3>
-                                        <p>Try searching for a different item name or category.</p>
-                                    </div>
-                                ) : (
-                                    filteredProducts.map(product => {
-                                        const inCart = cart.find(c => c.productId === product.id);
-                                        const isOutOfStock = product.stockQuantity <= 0;
-
-                                        return (
-                                            <div
-                                                key={product.id}
-                                                className={`pos-product-row-item ${isOutOfStock ? 'out-of-stock' : ''} ${inCart ? 'in-cart' : ''}`}
-                                                onClick={() => !isOutOfStock && handleOpenItemModal(product)}
-                                                id={`product-row-${product.id}`}
-                                            >
-                                                <div className="row-item-left">
-                                                    <div className="row-item-icon">
-                                                        {product.imageUrl ? (
-                                                            <img src={product.imageUrl} alt={product.name} />
-                                                        ) : (
-                                                            <Package size={22} />
-                                                        )}
-                                                    </div>
-                                                    <div className="row-item-details">
-                                                        <h4 className="row-item-name">{product.name}</h4>
-                                                        <span className="row-item-category">{product.category || 'General'}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="row-item-middle">
-                                                    <span className="row-item-price">
-                                                        {formatPrice(product.priceKes, product.priceEtb)}
-                                                    </span>
-                                                    <span className={`row-stock-badge ${product.stockQuantity < 5 ? 'low' : ''}`}>
-                                                        {isOutOfStock ? 'Out of Stock' : `${product.stockQuantity} in stock`}
-                                                    </span>
-                                                </div>
-
-                                                <div className="row-item-right">
-                                                    {inCart ? (
-                                                        <span className="in-cart-pill">
-                                                            <Check size={14} /> {inCart.quantity} in cart
-                                                        </span>
-                                                    ) : (
-                                                        <button
-                                                            className="btn btn-sm btn-primary row-add-btn"
-                                                            disabled={isOutOfStock}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleOpenItemModal(product);
-                                                            }}
-                                                        >
-                                                            <Plus size={16} /> Add Goods
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                )}
+                            <div className="sd-categories">
+                                {categories.map(cat => (
+                                    <button
+                                        key={cat}
+                                        className={`sd-cat-pill ${selectedCategory === cat ? 'active' : ''}`}
+                                        onClick={() => setSelectedCategory(cat)}
+                                    >
+                                        {cat}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
-                        {/* Right Panel: Order Summary & Cart Terminal */}
-                        <div className="pos-cart-panel full-page-cart">
-                            <div className="pos-cart-header">
-                                <div className="cart-header-title">
-                                    <ShoppingCart size={24} />
-                                    <h2>Order Cart</h2>
+                        {/* Product Listing */}
+                        <div className="sd-catalog-header">
+                            <h3>Available Inventory <span className="sd-count-badge">{filteredProducts.length} items</span></h3>
+                            <span className="sd-catalog-hint">Search and set a quantity above, or tap + to add one</span>
+                        </div>
+
+                        <div className="sd-product-list">
+                            {prodLoading ? (
+                                <div className="sd-skeleton-list">
+                                    {[...Array(6)].map((_, i) => <div key={i} className="sd-skeleton-row" />)}
                                 </div>
-                                {cart.length > 0 && (
-                                    <button className="btn-link-danger" onClick={clearCart} title="Clear Cart">
-                                        Clear All
-                                    </button>
-                                )}
-                            </div>
-
-                            {cart.length === 0 ? (
-                                <div className="pos-cart-empty">
-                                    <ShoppingBag size={56} />
-                                    <h3>Cart is empty</h3>
-                                    <p>Click any product on the left to set its quantity, price, and add it to this sale.</p>
+                            ) : filteredProducts.length === 0 ? (
+                                <div className="sd-empty">
+                                    <Package size={48} />
+                                    <h3>No products found</h3>
+                                    <p>Try searching for a different item name or category.</p>
                                 </div>
                             ) : (
-                                <div className="pos-cart-content">
-                                    {/* Cart Line Items Table */}
-                                    <div className="pos-cart-items-table">
-                                        <div className="cart-table-header">
-                                            <span>Product</span>
-                                            <span>Qty</span>
-                                            <span>Price</span>
-                                            <span>Subtotal</span>
-                                            <span>Action</span>
-                                        </div>
+                                filteredProducts.map(product => {
+                                    const inCart = cart.find(c => c.productId === product.id);
+                                    const isOutOfStock = product.stockQuantity <= 0;
 
-                                        {cart.map(item => (
-                                            <div key={item.productId} className="cart-table-row">
-                                                <div className="cart-col-name">
-                                                    <strong>{item.name}</strong>
+                                    return (
+                                        <div
+                                            key={product.id}
+                                            className={`sd-product-row ${isOutOfStock ? 'disabled' : ''} ${inCart ? 'in-cart' : ''}`}
+                                            onClick={() => !isOutOfStock && handleOpenItemModal(product)}
+                                            id={`product-row-${product.id}`}
+                                        >
+                                            <div className="sd-prod-left">
+                                                <div className="sd-prod-thumb">
+                                                    {product.imageUrl ? (
+                                                        <img src={product.imageUrl} alt={product.name} />
+                                                    ) : (
+                                                        <Package size={20} />
+                                                    )}
                                                 </div>
+                                                <div className="sd-prod-info">
+                                                    <span className="sd-prod-name">{product.name}</span>
+                                                    <span className="sd-prod-meta">
+                                                        {product.unitSize || ''}{product.unitSize ? ' · ' : ''}{product.stockQuantity} in stock · {product.category || 'General'}
+                                                    </span>
+                                                </div>
+                                            </div>
 
-                                                <div className="cart-col-qty">
-                                                    <button className="btn-icon-xs" onClick={() => updateQuantity(item.productId, -1)}>
-                                                        <Minus size={12} />
-                                                    </button>
-                                                    <span>{item.quantity}</span>
+                                            <div className="sd-prod-right">
+                                                <span className="sd-prod-price">
+                                                    {formatPrice(product.priceKes, product.priceEtb)}
+                                                </span>
+
+                                                {inCart ? (
+                                                    <span className="sd-in-cart-tag">
+                                                        <Check size={12} /> {inCart.quantity} in cart
+                                                    </span>
+                                                ) : (
                                                     <button
-                                                        className="btn-icon-xs"
+                                                        className="sd-add-btn"
+                                                        disabled={isOutOfStock}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleOpenItemModal(product);
+                                                        }}
+                                                    >
+                                                        <Plus size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </section>
+
+                    {/* RIGHT: Order Cart */}
+                    <aside className="sd-cart-panel">
+                        <div className="sd-cart-top">
+                            <div className="sd-cart-title-row">
+                                <ShoppingCart size={20} />
+                                <h2>Order ticket</h2>
+                            </div>
+                            <div className="sd-cart-meta">
+                                {cart.length > 0 && (
+                                    <>
+                                        <span className="sd-cart-stat">{cartItemCount} items</span>
+                                        <span className="sd-cart-stat">· Order #{Math.floor(Math.random() * 9000 + 1000)}</span>
+                                        <span className="sd-cart-stat">· {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {cart.length === 0 ? (
+                            <div className="sd-cart-empty">
+                                <div className="sd-cart-empty-icon">
+                                    <ShoppingBag size={40} />
+                                </div>
+                                <p>Search and set a quantity above, or tap + to add one</p>
+                            </div>
+                        ) : (
+                            <div className="sd-cart-body">
+                                {/* Cart Items */}
+                                <div className="sd-cart-items">
+                                    {cart.map(item => (
+                                        <div key={item.productId} className="sd-cart-item">
+                                            <div className="sd-ci-top">
+                                                <div className="sd-ci-info">
+                                                    <span className="sd-ci-name">{item.name}</span>
+                                                    <span className="sd-ci-subtotal">
+                                                        {item.isOverride
+                                                            ? `Br ${(item.unitPrice * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                                                            : formatPrice(item.unitPrice * item.quantity, item.priceEtb * item.quantity)
+                                                        }
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    className="sd-ci-remove"
+                                                    onClick={() => removeFromCart(item.productId)}
+                                                    title="Remove"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                            <div className="sd-ci-bottom">
+                                                <div className="sd-ci-qty-control">
+                                                    <button
+                                                        className="sd-qty-btn"
+                                                        onClick={() => updateQuantity(item.productId, -1)}
+                                                    >
+                                                        <Minus size={14} />
+                                                    </button>
+                                                    <span className="sd-qty-display">{item.quantity}</span>
+                                                    <button
+                                                        className="sd-qty-btn"
                                                         onClick={() => updateQuantity(item.productId, 1)}
                                                         disabled={item.quantity >= item.maxStock}
                                                     >
-                                                        <Plus size={12} />
+                                                        <Plus size={14} />
                                                     </button>
                                                 </div>
-
-                                                <div className="cart-col-price">
-                                                    {item.isOverride ? `KES ${Number(item.unitPrice).toFixed(2)}` : formatPrice(item.unitPrice, item.priceEtb)}
-                                                </div>
-
-                                                <div className="cart-col-subtotal">
-                                                    {item.isOverride
-                                                        ? `KES ${(item.unitPrice * item.quantity).toFixed(2)}`
-                                                        : formatPrice(item.unitPrice * item.quantity, item.priceEtb * item.quantity)
-                                                    }
-                                                </div>
-
-                                                <div className="cart-col-actions">
-                                                    <button
-                                                        className="btn-icon btn-sm"
-                                                        onClick={() => handleOpenItemModal(products.find(p => p.id === item.productId) || item)}
-                                                        title="Edit Quantity/Price"
-                                                    >
-                                                        <Edit2 size={14} />
-                                                    </button>
-                                                    <button
-                                                        className="btn-icon btn-danger btn-sm"
-                                                        onClick={() => removeFromCart(item.productId)}
-                                                        title="Remove item"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    className="sd-ci-edit"
+                                                    onClick={() => handleOpenItemModal(products.find(p => p.id === item.productId) || item)}
+                                                    title="Edit"
+                                                >
+                                                    <Edit2 size={13} />
+                                                </button>
                                             </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Customer Name Input (Required for Cashier Identification) */}
-                                    <div className="pos-reserve-box">
-                                        <div className="form-group" style={{ marginBottom: 0 }}>
-                                            <label htmlFor="order-customer-name" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
-                                                <User size={16} /> Customer Name / Owner *
-                                            </label>
-                                            <input
-                                                id="order-customer-name"
-                                                value={customerName}
-                                                onChange={(e) => setCustomerName(e.target.value)}
-                                                placeholder="e.g. John Doe / Customer Name"
-                                                required
-                                                style={{ marginTop: '0.4rem' }}
-                                            />
-                                            <small className="text-muted" style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem' }}>
-                                                Required so Cashier can identify who is paying. Unpaid orders auto-cancel after 6 hours.
-                                            </small>
                                         </div>
-                                    </div>
-
-                                    {/* Alert Notification */}
-                                    {submitMsg.text && (
-                                        <div className={`alert alert-${submitMsg.type}`}>{submitMsg.text}</div>
-                                    )}
-
-                                    {/* Total & Submit Panel */}
-                                    <div className="pos-cart-footer">
-                                        <div className="pos-total-row">
-                                            <span>Total Amount:</span>
-                                            <span className="pos-total-amount">{displayTotal}</span>
-                                        </div>
-
-                                        <button
-                                            className="btn btn-primary btn-full pos-submit-btn"
-                                            onClick={handleSubmitOrder}
-                                            disabled={submitLoading || cart.length === 0}
-                                            id="submit-order-btn"
-                                        >
-                                            {submitLoading ? (
-                                                <span className="btn-loading">Sending to Cashier…</span>
-                                            ) : (
-                                                <>
-                                                    <Send size={20} /> Complete Sale Order
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
+                                    ))}
                                 </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                /* ─── My Orders History ─── */
-                <div className="pos-history-workspace">
-                    <div className="section-card">
-                        <div className="section-header">
-                            <h2><History size={20} /> My Orders History</h2>
-                            <button className="btn btn-outline" onClick={fetchOrders}>
-                                <RefreshCw size={16} /> Refresh Orders
-                            </button>
-                        </div>
 
-                        {ordersLoading ? (
-                            <div className="table-skeleton">
-                                {[...Array(4)].map((_, i) => <div key={i} className="skeleton-row" />)}
-                            </div>
-                        ) : orders.length === 0 ? (
-                            <div className="empty-state">
-                                <History size={48} />
-                                <p>No orders created yet.</p>
-                            </div>
-                        ) : (
-                            <div className="table-wrapper">
-                                <table className="data-table" id="seller-orders-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Order ID</th>
-                                            <th>Date</th>
-                                            <th>Customer / Owner</th>
-                                            <th>Items</th>
-                                            <th>Total Amount</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {orders.map(order => (
-                                            <tr key={order.id} className={`order-row status-${order.status.toLowerCase()}`}>
-                                                <td className="td-id">#{order.id.slice(0, 8)}</td>
-                                                <td>{new Date(order.createdAt).toLocaleString()}</td>
-                                                <td>
-                                                    <strong className="text-accent-info">
-                                                        {order.reservedForName || order.customerName || 'In-store Walk-in'}
-                                                    </strong>
-                                                </td>
-                                                <td className="td-items">
-                                                    {order.items?.map((item, i) => (
-                                                        <span key={i} className="order-item-tag">
-                                                            {item.productName} × {item.quantity}
-                                                        </span>
-                                                    ))}
-                                                </td>
-                                                <td>
-                                                    <strong>
-                                                        KES {Number(order.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                                    </strong>
-                                                </td>
-                                                <td>{statusBadge(order.status)}</td>
-                                                <td className="td-actions">
-                                                    {order.status === 'PENDING' && (
-                                                        <button
-                                                            className="btn btn-sm btn-danger"
-                                                            onClick={() => handleCancelOrder(order.id)}
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                {/* Customer Name */}
+                                <div className="sd-customer-box">
+                                    <label htmlFor="order-customer-name">
+                                        <User size={14} /> Customer Name *
+                                    </label>
+                                    <input
+                                        id="order-customer-name"
+                                        value={customerName}
+                                        onChange={(e) => setCustomerName(e.target.value)}
+                                        placeholder="e.g. John Doe"
+                                        required
+                                    />
+                                    <small>Required for cashier identification. Auto-cancel after 6 hours.</small>
+                                </div>
+
+                                {submitMsg.text && (
+                                    <div className={`sd-alert sd-alert-${submitMsg.type}`}>{submitMsg.text}</div>
+                                )}
+
+                                {/* Footer / Total */}
+                                <div className="sd-cart-footer">
+                                    <div className="sd-total-row">
+                                        <span>Total</span>
+                                        <span className="sd-total-amount">{displayTotal}</span>
+                                    </div>
+                                    <button
+                                        className="sd-submit-btn"
+                                        onClick={handleSubmitOrder}
+                                        disabled={submitLoading || cart.length === 0}
+                                        id="submit-order-btn"
+                                    >
+                                        {submitLoading ? (
+                                            <span className="sd-btn-loading">Sending to Cashier…</span>
+                                        ) : (
+                                            <>
+                                                <Send size={18} /> Complete Sale Order
+                                            </>
+                                        )}
+                                    </button>
+                                    <button className="sd-clear-btn" onClick={clearCart}>
+                                        Clear cart
+                                    </button>
+                                </div>
                             </div>
                         )}
+                    </aside>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════ */}
+            {/* ─── HISTORY TAB ─── */}
+            {/* ═══════════════════════════════════════ */}
+            {activeTab === 'history' && (
+                <div className="sd-history">
+                    <div className="sd-history-header">
+                        <div className="sd-history-title">
+                            <h2><History size={22} /> My Orders</h2>
+                            <span className="sd-history-count">{orders.length} total</span>
+                        </div>
+                        <div className="sd-history-actions">
+                            <div className="sd-order-filters">
+                                {['ALL', 'PENDING', 'PAID', 'CANCELLED'].map(f => (
+                                    <button
+                                        key={f}
+                                        className={`sd-filter-pill ${orderFilter === f ? 'active' : ''}`}
+                                        onClick={() => setOrderFilter(f)}
+                                    >
+                                        {f === 'ALL' ? 'All' : f.charAt(0) + f.slice(1).toLowerCase()}
+                                        {f !== 'ALL' && (
+                                            <span className="sd-filter-count">
+                                                {orders.filter(o => f === 'ALL' || o.status === f).length}
+                                            </span>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                            <button className="btn btn-outline" onClick={fetchOrders}>
+                                <RefreshCw size={15} /> Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    {ordersLoading ? (
+                        <div className="sd-skeleton-list">
+                            {[...Array(4)].map((_, i) => <div key={i} className="sd-skeleton-row large" />)}
+                        </div>
+                    ) : filteredOrders.length === 0 ? (
+                        <div className="sd-empty large">
+                            <History size={52} />
+                            <h3>No orders found</h3>
+                            <p>{orderFilter === 'ALL' ? 'No orders created yet. Start selling!' : `No ${orderFilter.toLowerCase()} orders.`}</p>
+                        </div>
+                    ) : (
+                        <div className="sd-order-grid">
+                            {filteredOrders.map(order => (
+                                <div key={order.id} className={`sd-order-card status-${order.status.toLowerCase()}`}>
+                                    <div className="sd-oc-header">
+                                        <div className="sd-oc-id">
+                                            <Hash size={14} />
+                                            <span>{order.id.slice(0, 8)}</span>
+                                        </div>
+                                        {statusBadge(order.status)}
+                                    </div>
+
+                                    <div className="sd-oc-customer">
+                                        <User size={14} />
+                                        <span>{order.reservedForName || order.customerName || 'Walk-in'}</span>
+                                    </div>
+
+                                    <div className="sd-oc-items">
+                                        {order.items?.map((item, i) => (
+                                            <span key={i} className="sd-oc-item-tag">
+                                                {item.productName} × {item.quantity}
+                                            </span>
+                                        ))}
+                                    </div>
+
+                                    <div className="sd-oc-footer">
+                                        <div className="sd-oc-details">
+                                            <span className="sd-oc-total">
+                                                Br {Number(order.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            </span>
+                                            <span className="sd-oc-date">
+                                                {new Date(order.createdAt).toLocaleString()}
+                                            </span>
+                                        </div>
+                                        {order.status === 'PENDING' && (
+                                            <button
+                                                className="btn btn-sm btn-danger"
+                                                onClick={() => handleCancelOrder(order.id)}
+                                            >
+                                                Cancel
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════ */}
+            {/* ─── INSIGHTS TAB ─── */}
+            {/* ═══════════════════════════════════════ */}
+            {activeTab === 'insights' && (
+                <div className="sd-insights">
+                    <div className="sd-insights-header">
+                        <h2><BarChart3 size={22} /> Sales Insights</h2>
+                        <button className="btn btn-outline" onClick={fetchOrders}>
+                            <RefreshCw size={15} /> Refresh
+                        </button>
+                    </div>
+
+                    <div className="sd-insight-cards">
+                        <div className="sd-insight-card sd-ic-primary">
+                            <div className="sd-ic-icon"><ShoppingCart size={24} /></div>
+                            <div className="sd-ic-data">
+                                <span className="sd-ic-value">{insights.totalOrders}</span>
+                                <span className="sd-ic-label">Total Orders</span>
+                            </div>
+                        </div>
+                        <div className="sd-insight-card sd-ic-success">
+                            <div className="sd-ic-icon"><CheckCircle size={24} /></div>
+                            <div className="sd-ic-data">
+                                <span className="sd-ic-value">{insights.paidOrders}</span>
+                                <span className="sd-ic-label">Paid Orders</span>
+                            </div>
+                        </div>
+                        <div className="sd-insight-card sd-ic-warning">
+                            <div className="sd-ic-icon"><Clock size={24} /></div>
+                            <div className="sd-ic-data">
+                                <span className="sd-ic-value">{insights.pendingOrders}</span>
+                                <span className="sd-ic-label">Pending Orders</span>
+                            </div>
+                        </div>
+                        <div className="sd-insight-card sd-ic-info">
+                            <div className="sd-ic-icon"><TrendingUp size={24} /></div>
+                            <div className="sd-ic-data">
+                                <span className="sd-ic-value">{insights.todayOrders}</span>
+                                <span className="sd-ic-label">Today's Orders</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="sd-insight-detail-card">
+                        <h3><DollarSign size={18} /> Today's Revenue</h3>
+                        <span className="sd-revenue-big">
+                            Br {insights.todayRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                        <p className="sd-revenue-sub">From {insights.todayOrders} order{insights.todayOrders !== 1 ? 's' : ''} today</p>
+                    </div>
+
+                    {/* Recent Orders Quick-view */}
+                    <div className="sd-insight-recent">
+                        <h3><Eye size={18} /> Recent Activity</h3>
+                        <div className="sd-recent-list">
+                            {orders.slice(0, 5).map(order => (
+                                <div key={order.id} className="sd-recent-row">
+                                    <div className="sd-recent-left">
+                                        <span className="sd-recent-id">#{order.id.slice(0, 6)}</span>
+                                        <span className="sd-recent-customer">{order.reservedForName || order.customerName || 'Walk-in'}</span>
+                                    </div>
+                                    <div className="sd-recent-right">
+                                        <span className="sd-recent-amount">
+                                            Br {Number(order.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                        </span>
+                                        {statusBadge(order.status)}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* ─── Configure Item Modal (Quantity & Unit Price Step) ─── */}
+            {/* ═══════════════════════════════════════ */}
+            {/* ─── CONFIGURE ITEM MODAL ─── */}
+            {/* ═══════════════════════════════════════ */}
             {selectedProduct && (
                 <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
                     <div className="modal item-config-modal" onClick={(e) => e.stopPropagation()} id="item-config-modal">
                         <div className="modal-header">
-                            <h2>Add Item to Cart</h2>
+                            <h2>Add to Order</h2>
                             <button className="btn-icon" onClick={() => setSelectedProduct(null)}><X size={20} /></button>
                         </div>
 
                         <div className="item-config-body">
-                            {/* Product Overview Card */}
                             <div className="item-summary-card">
                                 <div className="item-summary-icon">
                                     {selectedProduct.imageUrl ? (
@@ -672,11 +800,10 @@ export default function SellerDashboard() {
                                 <div className="item-summary-info">
                                     <h3>{selectedProduct.name}</h3>
                                     <p className="item-category-tag">{selectedProduct.category || 'General'}</p>
-                                    <p className="item-stock-info">Available Stock: <strong>{selectedProduct.stockQuantity}</strong></p>
+                                    <p className="item-stock-info">Available: <strong>{selectedProduct.stockQuantity}</strong></p>
                                 </div>
                             </div>
 
-                            {/* Form Inputs: Quantity & Unit Price */}
                             <div className="form-group large-input-group">
                                 <label htmlFor="modal-qty">Quantity *</label>
                                 <div className="qty-modal-stepper">
@@ -709,7 +836,7 @@ export default function SellerDashboard() {
                             </div>
 
                             <div className="form-group large-input-group">
-                                <label htmlFor="modal-unit-price">Selling Unit Price (KES) *</label>
+                                <label htmlFor="modal-unit-price">Selling Unit Price (Br) *</label>
                                 <input
                                     id="modal-unit-price"
                                     type="number"
@@ -722,11 +849,10 @@ export default function SellerDashboard() {
                                 />
                             </div>
 
-                            {/* Subtotal Preview */}
                             <div className="item-subtotal-banner">
                                 <span>Line Subtotal:</span>
                                 <strong>
-                                    KES {((parseFloat(itemUnitPrice) || 0) * itemQty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    Br {((parseFloat(itemUnitPrice) || 0) * itemQty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </strong>
                             </div>
                         </div>
@@ -741,14 +867,16 @@ export default function SellerDashboard() {
                                 onClick={handleConfirmCartItem}
                                 id="confirm-add-item-btn"
                             >
-                                <ShoppingCart size={18} /> Add to Order Cart
+                                <ShoppingCart size={18} /> Add to Order
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* ─── Add Customer Modal ─── */}
+            {/* ═══════════════════════════════════════ */}
+            {/* ─── ADD CUSTOMER MODAL ─── */}
+            {/* ═══════════════════════════════════════ */}
             {customerModal && (
                 <div className="modal-overlay" onClick={() => setCustomerModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()} id="customer-modal">

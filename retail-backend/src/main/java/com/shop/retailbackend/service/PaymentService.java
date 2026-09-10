@@ -46,7 +46,7 @@ public class PaymentService {
         if (order.getStatus() == SaleOrderStatus.PAID) {
             throw new AppException(HttpStatus.CONFLICT, "Order is already paid");
         }
-        if (order.getStatus() != SaleOrderStatus.PENDING) {
+        if (order.getStatus() != SaleOrderStatus.PENDING && order.getStatus() != SaleOrderStatus.RESERVED) {
             throw new AppException(HttpStatus.CONFLICT,
                     "Order is no longer in RESERVED/PENDING status");
         }
@@ -55,21 +55,8 @@ public class PaymentService {
             throw new AppException(HttpStatus.CONFLICT, "Order is already paid");
         }
 
-        // Validate stock
-        for (SaleOrderItem item : order.getItems()) {
-            Product product = item.getProduct();
-            if (product.getStockQuantity() < item.getQuantity()) {
-                throw new AppException(HttpStatus.CONFLICT,
-                        "Insufficient stock for product: " + product.getName()
-                                + ". Available: " + product.getStockQuantity()
-                                + ", Requested: " + item.getQuantity());
-            }
-        }
-
-        // Deduct stock (with optimistic lock retry)
-        for (SaleOrderItem item : order.getItems()) {
-            deductStockWithRetry(item.getProduct(), item.getQuantity());
-        }
+        // Note: We no longer deduct stock here since stock is deducted upfront upon Sale Order creation
+        // (both for PENDING and RESERVED status).
 
         order.setStatus(SaleOrderStatus.PAID);
         saleOrderRepository.save(order);

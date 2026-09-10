@@ -4529,28 +4529,47 @@ a:hover {
   letter-spacing: -0.5px;
 }
 
+.sd-submit-row {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
 .sd-submit-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  width: 100%;
-  padding: 0.85rem;
+  flex: 1;
+  padding: 0.85rem 0.5rem;
   border: none;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--accent-primary), #818cf8);
   color: white;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-family: var(--font-family);
   cursor: pointer;
   transition: var(--transition);
+}
+
+.sd-btn-cash {
+  background: linear-gradient(135deg, var(--accent-primary), #818cf8);
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
 }
 
-.sd-submit-btn:hover:not(:disabled) {
+.sd-btn-cash:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+}
+
+.sd-btn-mobile {
+  background: linear-gradient(135deg, var(--accent-success), #34d399);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+}
+
+.sd-btn-mobile:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
 }
 
 .sd-submit-btn:disabled {

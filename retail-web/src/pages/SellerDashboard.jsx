@@ -267,7 +267,7 @@ export default function SellerDashboard() {
     };
 
     // ─── Order Submission ───────────────────
-    const handleSubmitOrder = async () => {
+    const handleSubmitOrder = async (orderType = 'CASH') => {
         if (cart.length === 0) return;
         if (!customerName.trim()) {
             setSubmitMsg({ type: 'error', text: 'Please enter the Customer Name so the Cashier can identify this order.' });
@@ -283,12 +283,24 @@ export default function SellerDashboard() {
                 unitPrice: c.unitPrice,
             }));
 
-            await orderService.create({
-                items,
-                customerName: customerName.trim(),
-            });
+            if (orderType === 'MOBILE') {
+                await orderService.createReserved({
+                    items,
+                    reservedForName: customerName.trim(),
+                    reservedForPhone: '', // Optional in backend
+                });
+            } else {
+                await orderService.create({
+                    items,
+                    customerName: customerName.trim(),
+                });
+            }
 
-            setSubmitMsg({ type: 'success', text: `Order created for "${customerName.trim()}" & sent to Cashier!` });
+            const successText = orderType === 'MOBILE'
+                ? `Mobile payment order reserved for "${customerName.trim()}"!`
+                : `Order created for "${customerName.trim()}" & sent to Cashier!`;
+
+            setSubmitMsg({ type: 'success', text: successText });
 
             setTimeout(() => {
                 clearCart();
@@ -647,20 +659,35 @@ export default function SellerDashboard() {
                                         <span>Total</span>
                                         <span className="sd-total-amount">{displayTotal}</span>
                                     </div>
-                                    <button
-                                        className="sd-submit-btn"
-                                        onClick={handleSubmitOrder}
-                                        disabled={submitLoading || cart.length === 0}
-                                        id="submit-order-btn"
-                                    >
-                                        {submitLoading ? (
-                                            <span className="sd-btn-loading">Sending to Cashier…</span>
-                                        ) : (
-                                            <>
-                                                <Send size={18} /> Complete Sale Order
-                                            </>
-                                        )}
-                                    </button>
+                                    <div className="sd-submit-row">
+                                        <button
+                                            className="sd-submit-btn sd-btn-cash"
+                                            onClick={() => handleSubmitOrder('CASH')}
+                                            disabled={submitLoading || cart.length === 0}
+                                        >
+                                            {submitLoading ? (
+                                                <span className="sd-btn-loading">Sending…</span>
+                                            ) : (
+                                                <>
+                                                    <Send size={16} /> Cash Sale
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            className="sd-submit-btn sd-btn-mobile"
+                                            onClick={() => handleSubmitOrder('MOBILE')}
+                                            disabled={submitLoading || cart.length === 0}
+                                            title="Reserves stock instantly"
+                                        >
+                                            {submitLoading ? (
+                                                <span className="sd-btn-loading">Reserving…</span>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle size={16} /> Mobile (Reserve)
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                     <button className="sd-clear-btn" onClick={clearCart}>
                                         Clear cart
                                     </button>

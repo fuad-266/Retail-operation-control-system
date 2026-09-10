@@ -31,6 +31,25 @@ public class SaleOrderService {
     @Transactional
     public SaleOrderDto createOrder(CreateOrderRequest request, UUID sellerId) {
         User seller = getUserOrThrow(sellerId);
+
+        // Validate all stock before touching anything
+        for (var item : request.getItems()) {
+            Product product = getActiveProductOrThrow(item.getProductId());
+            if (product.getStockQuantity() < item.getQuantity()) {
+                throw new AppException(HttpStatus.CONFLICT,
+                        "Insufficient stock for product: " + product.getName()
+                                + ". Available: " + product.getStockQuantity()
+                                + ", Requested: " + item.getQuantity());
+            }
+        }
+
+        // Deduct stock immediately
+        for (var item : request.getItems()) {
+            Product product = getActiveProductOrThrow(item.getProductId());
+            product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
+            productRepository.save(product);
+        }
+
         SaleOrder order = buildOrder(request.getItems(), seller, SaleOrderStatus.PENDING, request.getCustomerName(),
                 null);
         saleOrderRepository.save(order);
@@ -88,13 +107,11 @@ public class SaleOrderService {
             throw new AppException(HttpStatus.CONFLICT, "Order is already cancelled");
         }
 
-        // Restore stock if it was RESERVED
-        if (order.getStatus() == SaleOrderStatus.RESERVED) {
-            for (SaleOrderItem item : order.getItems()) {
-                Product product = item.getProduct();
-                product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
-                productRepository.save(product);
-            }
+        // Restore stock since both PENDING and RESERVED deduct stock on creation
+        for (SaleOrderItem item : order.getItems()) {
+            Product product = item.getProduct();
+            product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+            productRepository.save(product);
         }
 
         order.setStatus(SaleOrderStatus.CANCELLED);

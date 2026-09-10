@@ -42,10 +42,11 @@ export default function SellerDashboard() {
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [prodLoading, setProdLoading] = useState(true);
 
-    // ─── Add Item Modal State ────────────────
+    // ─── Inline Add / Edit State ────────────────
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [itemQty, setItemQty] = useState(1);
     const [itemUnitPrice, setItemUnitPrice] = useState('');
+    const [editModal, setEditModal] = useState(false);
 
     // ─── Cart State ─────────────────────────
     const [cart, setCart] = useState([]);
@@ -131,8 +132,8 @@ export default function SellerDashboard() {
         };
     }, [orders]);
 
-    // ─── Open Item Configuration Modal ──────
-    const handleOpenItemModal = (product) => {
+    // ─── Select Product Inline ──────────────
+    const handleSelectProduct = (product) => {
         if (!product.active || product.stockQuantity <= 0) return;
 
         const existing = cart.find(c => c.productId === product.id);
@@ -146,7 +147,40 @@ export default function SellerDashboard() {
         }
     };
 
-    // ─── Confirm Add/Update Item in Cart ────
+    // ─── Quick Add to Cart (inline from search bar) ────
+    const handleQuickAdd = () => {
+        if (!selectedProduct) return;
+        const parsedQty = Math.max(1, Math.min(parseInt(itemQty, 10) || 1, selectedProduct.stockQuantity));
+        const parsedPrice = Number(selectedProduct.priceKes);
+
+        setCart(prev => {
+            const existing = prev.find(c => c.productId === selectedProduct.id);
+            if (existing) {
+                return prev.map(c =>
+                    c.productId === selectedProduct.id
+                        ? { ...c, quantity: parsedQty, unitPrice: parsedPrice, isOverride: false }
+                        : c
+                );
+            }
+            return [...prev, {
+                productId: selectedProduct.id,
+                name: selectedProduct.name,
+                category: selectedProduct.category,
+                imageUrl: selectedProduct.imageUrl,
+                priceKes: selectedProduct.priceKes,
+                priceEtb: selectedProduct.priceEtb,
+                unitPrice: parsedPrice,
+                isOverride: false,
+                quantity: parsedQty,
+                maxStock: selectedProduct.stockQuantity,
+            }];
+        });
+
+        setSelectedProduct(null);
+        setItemQty(1);
+    };
+
+    // ─── Confirm Add/Update from Edit Modal ────
     const handleConfirmCartItem = () => {
         if (!selectedProduct) return;
         const parsedQty = Math.max(1, Math.min(parseInt(itemQty, 10) || 1, selectedProduct.stockQuantity));
@@ -177,6 +211,8 @@ export default function SellerDashboard() {
         });
 
         setSelectedProduct(null);
+        setEditModal(false);
+        setItemQty(1);
     };
 
     const updateQuantity = (productId, delta) => {
@@ -376,24 +412,45 @@ export default function SellerDashboard() {
                 <div className="sd-pos-layout">
                     {/* LEFT: Product Catalog */}
                     <section className="sd-catalog">
-                        {/* Search Bar */}
+                        {/* Search Bar with Qty + Add */}
                         <div className="sd-search-card">
-                            <div className="sd-search-row">
-                                <Search size={18} className="sd-search-icon" />
+                            <div className="sd-search-top-row">
+                                <div className="sd-search-row">
+                                    <Search size={18} className="sd-search-icon" />
+                                    <input
+                                        ref={searchRef}
+                                        id="seller-product-search"
+                                        type="text"
+                                        value={prodSearch}
+                                        onChange={(e) => setProdSearch(e.target.value)}
+                                        placeholder={selectedProduct ? selectedProduct.name : 'Type product name or category to search (e.g. Teff, Berbere, Coffee, Oil)…'}
+                                        className="sd-search-input"
+                                    />
+                                    {prodSearch && (
+                                        <button className="sd-search-clear" onClick={() => { setProdSearch(''); searchRef.current?.focus(); }}>
+                                            <X size={16} />
+                                        </button>
+                                    )}
+                                </div>
+
                                 <input
-                                    ref={searchRef}
-                                    id="seller-product-search"
-                                    type="text"
-                                    value={prodSearch}
-                                    onChange={(e) => setProdSearch(e.target.value)}
-                                    placeholder="Search products (e.g. Teff, Berbere, Coffee, Oil)…"
-                                    className="sd-search-input"
+                                    type="number"
+                                    min="1"
+                                    max={selectedProduct?.stockQuantity || 999}
+                                    value={itemQty}
+                                    onChange={(e) => setItemQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                    className="sd-inline-qty"
+                                    id="inline-qty-input"
                                 />
-                                {prodSearch && (
-                                    <button className="sd-search-clear" onClick={() => { setProdSearch(''); searchRef.current?.focus(); }}>
-                                        <X size={16} />
-                                    </button>
-                                )}
+
+                                <button
+                                    className="sd-inline-add-btn"
+                                    onClick={handleQuickAdd}
+                                    disabled={!selectedProduct}
+                                    id="inline-add-btn"
+                                >
+                                    <Plus size={18} /> Add
+                                </button>
                             </div>
 
                             <div className="sd-categories">
@@ -434,8 +491,8 @@ export default function SellerDashboard() {
                                     return (
                                         <div
                                             key={product.id}
-                                            className={`sd-product-row ${isOutOfStock ? 'disabled' : ''} ${inCart ? 'in-cart' : ''}`}
-                                            onClick={() => !isOutOfStock && handleOpenItemModal(product)}
+                                            className={`sd-product-row ${isOutOfStock ? 'disabled' : ''} ${inCart ? 'in-cart' : ''} ${selectedProduct?.id === product.id ? 'selected' : ''}`}
+                                            onClick={() => !isOutOfStock && handleSelectProduct(product)}
                                             id={`product-row-${product.id}`}
                                         >
                                             <div className="sd-prod-left">
@@ -469,7 +526,7 @@ export default function SellerDashboard() {
                                                         disabled={isOutOfStock}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleOpenItemModal(product);
+                                                            handleSelectProduct(product);
                                                         }}
                                                     >
                                                         <Plus size={16} />
@@ -551,8 +608,12 @@ export default function SellerDashboard() {
                                                 </div>
                                                 <button
                                                     className="sd-ci-edit"
-                                                    onClick={() => handleOpenItemModal(products.find(p => p.id === item.productId) || item)}
-                                                    title="Edit"
+                                                    onClick={() => {
+                                                        const prod = products.find(p => p.id === item.productId) || item;
+                                                        handleSelectProduct(prod);
+                                                        setEditModal(true);
+                                                    }}
+                                                    title="Edit price & qty"
                                                 >
                                                     <Edit2 size={13} />
                                                 </button>
@@ -778,14 +839,14 @@ export default function SellerDashboard() {
             )}
 
             {/* ═══════════════════════════════════════ */}
-            {/* ─── CONFIGURE ITEM MODAL ─── */}
+            {/* ─── EDIT ITEM MODAL (price override) ─── */}
             {/* ═══════════════════════════════════════ */}
-            {selectedProduct && (
-                <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
+            {editModal && selectedProduct && (
+                <div className="modal-overlay" onClick={() => { setEditModal(false); setSelectedProduct(null); }}>
                     <div className="modal item-config-modal" onClick={(e) => e.stopPropagation()} id="item-config-modal">
                         <div className="modal-header">
-                            <h2>Add to Order</h2>
-                            <button className="btn-icon" onClick={() => setSelectedProduct(null)}><X size={20} /></button>
+                            <h2>Edit Item</h2>
+                            <button className="btn-icon" onClick={() => { setEditModal(false); setSelectedProduct(null); }}><X size={20} /></button>
                         </div>
 
                         <div className="item-config-body">
@@ -858,7 +919,7 @@ export default function SellerDashboard() {
                         </div>
 
                         <div className="modal-actions">
-                            <button type="button" className="btn btn-outline" onClick={() => setSelectedProduct(null)}>
+                            <button type="button" className="btn btn-outline" onClick={() => { setEditModal(false); setSelectedProduct(null); }}>
                                 Cancel
                             </button>
                             <button
@@ -867,7 +928,7 @@ export default function SellerDashboard() {
                                 onClick={handleConfirmCartItem}
                                 id="confirm-add-item-btn"
                             >
-                                <ShoppingCart size={18} /> Add to Order
+                                <ShoppingCart size={18} /> Update Item
                             </button>
                         </div>
                     </div>

@@ -664,26 +664,13 @@ export default function SellerDashboard() {
                                             className="sd-submit-btn sd-btn-cash"
                                             onClick={() => handleSubmitOrder('CASH')}
                                             disabled={submitLoading || cart.length === 0}
+                                            style={{ flex: 1 }}
                                         >
                                             {submitLoading ? (
                                                 <span className="sd-btn-loading">Sending…</span>
                                             ) : (
                                                 <>
                                                     <Send size={16} /> Cash Sale
-                                                </>
-                                            )}
-                                        </button>
-                                        <button
-                                            className="sd-submit-btn sd-btn-mobile"
-                                            onClick={() => handleSubmitOrder('MOBILE')}
-                                            disabled={submitLoading || cart.length === 0}
-                                            title="Reserves stock instantly"
-                                        >
-                                            {submitLoading ? (
-                                                <span className="sd-btn-loading">Reserving…</span>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle size={16} /> Mobile (Reserve)
                                                 </>
                                             )}
                                         </button>

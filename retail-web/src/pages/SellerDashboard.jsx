@@ -32,6 +32,7 @@ import {
 
 export default function SellerDashboard() {
     const { currency } = useAuth();
+    const currencySymbol = currency === 'KES' ? 'KSh' : 'Br';
 
     // ─── View Tab ───────────────────────────
     const [activeTab, setActiveTab] = useState('pos'); // 'pos' | 'history' | 'insights'
@@ -251,19 +252,19 @@ export default function SellerDashboard() {
         const hasOverrides = cart.some(c => c.isOverride);
 
         if (currency === 'ETB' && !hasOverrides) {
-            return `Br ${totalEtb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            return `${currencySymbol} ${totalEtb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
         if (currency === 'ETB' && hasOverrides) {
-            return `Br (Manual Override)`;
+            return `${currencySymbol} (Manual Override)`;
         }
-        return `Br ${cartTotalKes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }, [cart, currency, cartTotalKes]);
+        return `${currencySymbol} ${cartTotalKes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }, [cart, currency, cartTotalKes, currencySymbol]);
 
     const formatPrice = (priceKes, priceEtb) => {
         if (currency === 'ETB' && priceEtb != null) {
-            return `Br ${Number(priceEtb).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+            return `${currencySymbol} ${Number(priceEtb).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
         }
-        return `Br ${Number(priceKes).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        return `${currencySymbol} ${Number(priceKes).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
     };
 
     // ─── Order Submission ───────────────────
@@ -588,7 +589,7 @@ export default function SellerDashboard() {
                                                     <span className="sd-ci-name">{item.name}</span>
                                                     <span className="sd-ci-subtotal">
                                                         {item.isOverride
-                                                            ? `Br ${(item.unitPrice * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                                                            ? `${currencySymbol} ${(item.unitPrice * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
                                                             : formatPrice(item.unitPrice * item.quantity, item.priceEtb * item.quantity)
                                                         }
                                                     </span>
@@ -756,7 +757,7 @@ export default function SellerDashboard() {
                                     <div className="sd-oc-footer">
                                         <div className="sd-oc-details">
                                             <span className="sd-oc-total">
-                                                Br {Number(order.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                {currencySymbol} {Number(order.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </span>
                                             <span className="sd-oc-date">
                                                 {new Date(order.createdAt).toLocaleString()}
@@ -824,7 +825,7 @@ export default function SellerDashboard() {
                     <div className="sd-insight-detail-card">
                         <h3><DollarSign size={18} /> Today's Revenue</h3>
                         <span className="sd-revenue-big">
-                            Br {insights.todayRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            {currencySymbol} {insights.todayRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
                         <p className="sd-revenue-sub">From {insights.todayOrders} order{insights.todayOrders !== 1 ? 's' : ''} today</p>
                     </div>
@@ -841,7 +842,7 @@ export default function SellerDashboard() {
                                     </div>
                                     <div className="sd-recent-right">
                                         <span className="sd-recent-amount">
-                                            Br {Number(order.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            {currencySymbol} {Number(order.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                         </span>
                                         {statusBadge(order.status)}
                                     </div>
@@ -927,7 +928,7 @@ export default function SellerDashboard() {
                             <div className="item-subtotal-banner">
                                 <span>Line Subtotal:</span>
                                 <strong>
-                                    Br {((parseFloat(itemUnitPrice) || 0) * itemQty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    {currencySymbol} {((parseFloat(itemUnitPrice) || 0) * itemQty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </strong>
                             </div>
                         </div>

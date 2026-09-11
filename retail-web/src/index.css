@@ -5,19 +5,19 @@
    ────────────────────────────────────────── */
 :root {
   /* Colors */
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --bg-card: #1e293b;
-  --bg-card-hover: #263549;
+  --bg-primary: #0A1B1E;
+  --bg-secondary: #132E33;
+  --bg-tertiary: #1E4F5A;
+  --bg-card: #132E33;
+  --bg-card-hover: #17383E;
 
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-primary: #EEEADD;
+  --text-secondary: #A9B8B6;
+  --text-muted: #798D8A;
 
-  --accent-primary: #6366f1;
-  --accent-primary-hover: #818cf8;
-  --accent-primary-glow: rgba(99, 102, 241, 0.25);
+  --accent-primary: #AF6E48;
+  --accent-primary-hover: #C57E54;
+  --accent-primary-glow: rgba(175, 110, 72, 0.25);
 
   --accent-success: #10b981;
   --accent-success-bg: rgba(16, 185, 129, 0.12);
@@ -28,8 +28,8 @@
   --accent-info: #22d3ee;
   --accent-info-bg: rgba(34, 211, 238, 0.12);
 
-  --border-color: #334155;
-  --border-light: #475569;
+  --border-color: #2A484C;
+  --border-light: #3D6268;
 
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -55,25 +55,25 @@
    ────────────────────────────────────────── */
 @media (prefers-color-scheme: light) {
   :root {
-    --bg-primary: #f8fafc;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #f1f5f9;
-    --bg-card: #ffffff;
-    --bg-card-hover: #f1f5f9;
+    --bg-primary: #F7F6F2;
+    --bg-secondary: #EEEADD;
+    --bg-tertiary: #E1DFD6;
+    --bg-card: #FAF9F6;
+    --bg-card-hover: #FFFFFF;
 
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
+    --text-primary: #1E4F5A;
+    --text-secondary: #3D5A5E;
+    --text-muted: #5C777A;
 
-    --border-color: #e2e8f0;
-    --border-light: #cbd5e1;
+    --border-color: #D5D2C7;
+    --border-light: #C4C1B6;
 
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
-    --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.35);
+    --shadow-sm: 0 1px 3px rgba(30, 79, 90, 0.08);
+    --shadow-md: 0 4px 12px rgba(30, 79, 90, 0.12);
+    --shadow-lg: 0 8px 24px rgba(30, 79, 90, 0.15);
+    --shadow-glow: 0 0 24px rgba(175, 110, 72, 0.35);
 
-    --accent-primary-hover: #4f46e5;
+    --accent-primary-hover: #9E5B38;
     --accent-success-bg: rgba(16, 185, 129, 0.15);
     --accent-warning-bg: rgba(245, 158, 11, 0.15);
     --accent-danger-bg: rgba(239, 68, 68, 0.12);
@@ -84,25 +84,25 @@
    Light Theme Class Overrides
    ────────────────────────────────────────── */
   .light {
-    --bg-primary: #f8fafc;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #f1f5f9;
-    --bg-card: #ffffff;
-    --bg-card-hover: #f1f5f9;
+    --bg-primary: #F7F6F2;
+    --bg-secondary: #EEEADD;
+    --bg-tertiary: #E1DFD6;
+    --bg-card: #FAF9F6;
+    --bg-card-hover: #FFFFFF;
 
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
+    --text-primary: #1E4F5A;
+    --text-secondary: #3D5A5E;
+    --text-muted: #5C777A;
 
-    --border-color: #e2e8f0;
-    --border-light: #cbd5e1;
+    --border-color: #D5D2C7;
+    --border-light: #C4C1B6;
 
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
-    --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.35);
+    --shadow-sm: 0 1px 3px rgba(30, 79, 90, 0.08);
+    --shadow-md: 0 4px 12px rgba(30, 79, 90, 0.12);
+    --shadow-lg: 0 8px 24px rgba(30, 79, 90, 0.15);
+    --shadow-glow: 0 0 24px rgba(175, 110, 72, 0.35);
 
-    --accent-primary-hover: #4f46e5;
+    --accent-primary-hover: #9E5B38;
     --accent-success-bg: rgba(16, 185, 129, 0.15);
     --accent-warning-bg: rgba(245, 158, 11, 0.15);
     --accent-danger-bg: rgba(239, 68, 68, 0.12);
@@ -578,7 +578,7 @@ a:hover {
 .circle-2 {
   width: 400px;
   height: 400px;
-  background: #ec4899;
+  background: var(--accent-primary-hover);
   bottom: -10%;
   left: -5%;
   animation: float 15s ease-in-out infinite reverse;
@@ -632,7 +632,7 @@ a:hover {
   justify-content: center;
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, var(--accent-primary), #818cf8);
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-hover));
   border-radius: var(--radius-lg);
   color: white;
   margin-bottom: 1rem;
